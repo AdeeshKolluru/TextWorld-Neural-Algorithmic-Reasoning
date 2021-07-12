@@ -24,7 +24,8 @@ from torch_geometric.data import DataLoader
 import numpy as np
 from pprint import pprint
 from docopt import docopt
-
+import os
+import datetime
 
 import models
 from flow_datasets import SingleIterationDataset
@@ -145,9 +146,10 @@ if __name__ == "__main__":
                     len_broken,
                     patience))
 
-            torch.save(processor.state_dict(), './.serialized_models/test_'+NAME+'_epoch_'+str(epoch)+'.pt')
+            os.makedirs(f"checkpoints/{NAME}", exist_ok=True)
+            torch.save(processor.state_dict(), f'checkpoints/{NAME}/test_{NAME}_epoch_'+str(epoch)+'.pt')
 
             if patience >= PATIENCE_LIMIT:
                 break
 
-    torch.save(best_model.state_dict(), './.serialized_models/best_'+NAME+'.pt')
+    torch.save(best_model.state_dict(), f'checkpoints/{NAME}/best_{timestamp}_{NAME}.pt')
