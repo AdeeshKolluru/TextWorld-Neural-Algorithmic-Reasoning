@@ -25,7 +25,6 @@ import numpy as np
 from pprint import pprint
 from docopt import docopt
 import os
-import datetime
 
 import models
 from flow_datasets import SingleIterationDataset
@@ -152,4 +151,4 @@ if __name__ == "__main__":
             if patience >= PATIENCE_LIMIT:
                 break
 
-    torch.save(best_model.state_dict(), f'checkpoints/{NAME}/best_{timestamp}_{NAME}.pt')
+    torch.save(best_model.state_dict(), f'checkpoints/{NAME}/best_{NAME}.pt')
