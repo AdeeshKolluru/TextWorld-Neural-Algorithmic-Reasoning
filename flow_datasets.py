@@ -316,20 +316,29 @@ class BellmanFordDataset(Dataset):
         dirname = os.path.join(self.raw_dir, self.split)
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
-            number_of_graphs = 10
-            size = 10
+            if self.split == "train":
+                number_of_graphs = 100
+                sizes = [20]
+            elif self.split == "val":
+                number_of_graphs = 5
+                sizes = [20]
+            elif self.split == "test":
+                number_of_graphs = 5
+                sizes = [20, 50, 100]
             threshold = 0.3
-            #filename = "1"
 
-            for idx in range(number_of_graphs):
-                adj = torch.rand(size, size)
-                adj = (adj + adj.T) / 2
-                adj[adj < threshold] = 0
-                for i in range(size):
-                    adj[i, i] = 0
-                t, p = b_f(adj)
-                filename = os.path.join(dirname, f"{idx}.pt")
-                torch.save({"adj": adj, "values": t, "predecessors": p}, filename)
+            idx = 0
+            for size in sizes:
+                for c in range(number_of_graphs):
+                    adj = torch.rand(size, size)
+                    adj = (adj + adj.T) / 2
+                    adj[adj < threshold] = 0
+                    for i in range(size):
+                        adj[i, i] = 0
+                    t, p = b_f(adj)
+                    filename = os.path.join(dirname, f"{idx}.pt")
+                    torch.save({"adj": adj, "values": t, "predecessors": p}, filename)
+                    idx += 1
 
     def get(self, idx):
         if not os.path.isdir(os.path.join(self.processed_dir, self.split)):
