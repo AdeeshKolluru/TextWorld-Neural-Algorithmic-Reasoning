@@ -16,7 +16,7 @@ google==2.0.3
 google-auth==1.11.2
 google-auth-oauthlib==0.4.1
 googledrivedownloader==0.4
-grpcio==1.27.2
+grpcio==1.32.0
 h5py==2.10.0
 idna==2.8
 imageio==2.6.1
@@ -59,7 +59,6 @@ SetSimilaritySearch==0.1.7
 six==1.14.0
 soupsieve==1.9.5
 tensorboard==2.1.0
-torch==1.4.0
 torch-cluster==1.5.4
 torch-geometric==1.4.1
 torch-scatter==2.0.3
