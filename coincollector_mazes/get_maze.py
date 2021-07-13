@@ -28,6 +28,21 @@ def add_shortest_path_info(G: nx.DiGraph, game: textworld.Game) -> nx.DiGraph:
     return G
 
 def get_maze(level: int, seed: int) -> nx.DiGraph:
+    '''
+    Generates a graph model of the world of a Textworld Coin-Collector game.
+
+    Args:
+        level: Difficulty level of the game. See documentation of make_coin_collector_game for details. Gives a line graph for level <= 100 and graphs that are not line graphs for level >= 101.
+        seed: Random seed used for generation of the graph model.
+
+    Returns: A networkx DiGraph where nodes have node data
+    'description', which is a string of the in-game room description;
+    'is_starting_position', which 1 if the room is the unique room to be the player's starting position and 0 otherwise;
+    'has_coin', which 1 if the room is the unique room to contain a coin and 0 otherwise;
+    and edges have edge data
+    'direction', which is 0 [1/2/3] if beginning of the edge is north [east/south/west] of end of the edge;
+    'contained_in_shortest_path', if the edge is contained in a shortest path from the player starting location to the coin room. If more than one shortest path exists, one is chosen arbitrarily.
+    '''
     options = build_game_options(seed)
     game = make_coin_collector_game({'level': level}, options)
 
