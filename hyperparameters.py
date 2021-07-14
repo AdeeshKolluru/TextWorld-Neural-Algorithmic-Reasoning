@@ -14,6 +14,7 @@ def get_hyperparameters():
         "pna_aggregators": "mean min max std",
         "pna_scalers": "identity amplification attenuation",
         "batch_size": 32,
+        "test_batch_size": 5,
         "walk_length": 5,
         "max_threshold": 10,
         "patience_limit": 100,
