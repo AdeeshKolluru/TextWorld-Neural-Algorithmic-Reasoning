@@ -200,8 +200,8 @@ class BellFordNetwork(AlgorithmBase):
 
     def get_outputs(self, batch, adj_matrix, flow_matrix, compute_losses_and_broken):# Also updates broken invariants
         predecessors = torch.max(self.last_predecessors_p, dim=1).indices
-        if not self.training and compute_losses_and_broken:
-            self.update_broken_invariants(batch, predecessors, adj_matrix, flow_matrix)
+        # if not self.training and compute_losses_and_broken:
+        #     self.update_broken_invariants(batch, predecessors, adj_matrix, flow_matrix)
         return predecessors
     
     
