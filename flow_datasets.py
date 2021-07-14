@@ -361,7 +361,7 @@ class BellmanFordDataset(Dataset):
                     torch.save({"adj": adj, "values": t, "predecessors": p}, filename)
                     idx += 1
 
-    def get(self, idx):
+    def __getitem__(self, idx):
         if not os.path.isdir(os.path.join(self.processed_dir, self.split)):
             if not os.path.isdir(os.path.join(self.raw_dir, self.split)):
                 self.download()
