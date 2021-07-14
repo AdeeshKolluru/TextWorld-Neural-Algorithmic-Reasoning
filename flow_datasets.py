@@ -241,7 +241,7 @@ def b_f(adj):
     return torch.stack(res), torch.stack(predecessors)
 
 class BellmanFordDataset(Dataset):
-    def __init__(self, root, device='cuda', split='train', transform=None, pre_transform=None):
+    def __init__(self, root, device='cuda', split='train', transform=None, pre_transform=None, *args, **kwargs):
         self.device = device
         assert split in ['train', 'val'] or 'test' in split
         self.split = split
@@ -350,22 +350,13 @@ class BellmanFordDataset(Dataset):
         return data
             
 if __name__ == '__main__':
-    #f = BFSSingleIterationDataset('./graph_only_BFS', split='test', less_wired=True, device='cpu', probp=3, probq=4)
-    #print(f[0].x.shape)
-    #print(f[0].y.shape)
-    #print(f[0].x[:, 0])
-    #print("x", f[0].x)
-    #print("y", f[0].y)
-    #print(f[0].capacities)
-    #print(f[0].num_nodes)
-
-    print("bf")
+    print("b_f")
     f = BellmanFordDataset("BellmanFord", split='train', device='cpu')
     print(f.root)
     print(f.processed_dir)
     print(f.raw_dir)
     # x  and y have shape (#nodes, #steps, #2), where the last dimension has 
     # the first element representing the predecessor and the second representing the value
-    print(f[0].x)
-    print(f[0].y)
+    print(f[0].x, f[0].x.shape)
+    print(f[0].y, f[0].y.shape)
     print(f[0].num_nodes)
