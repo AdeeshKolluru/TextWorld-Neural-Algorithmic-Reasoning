@@ -68,9 +68,7 @@ def load_algorithms(algorithms, processor, use_ints):
     DEVICE = hyperparameters["device"]
     DIM_LATENT = hyperparameters["dim_latent"]
     DIM_NODES_BellmanFord = hyperparameters["dim_nodes_BellmanFord"]
-    DIM_EDGES = hyperparameters["dim_edges"]
-    DIM_EDGES_BFS = hyperparameters["dim_edges_BFS"]
-    DIM_BITS = hyperparameters["dim_bits"] if use_ints else None
+    DIM_EDGES = hyperparameters["dim_edges_BellmanFord"]
     for algorithm in algorithms:
         if algorithm == "BellmanFord":
             algo_net = models.BellFordNetwork(DIM_LATENT, DIM_NODES_BellmanFord, DIM_EDGES, processor, flow_datasets.BellmanFordDataset, './BellmanFord').to(DEVICE)

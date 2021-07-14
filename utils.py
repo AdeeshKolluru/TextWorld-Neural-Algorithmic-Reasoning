@@ -28,6 +28,10 @@ def get_mask_to_process(continue_p, batch_ids, edge_ids, debug=False):
         print("Mask:", mask)
     return mask, edge_mask
 
+
+def get_adj_matrix(edge_index):
+    return torch_geometric.utils.to_dense_adj(edge_index).squeeze().bool()
+
 def get_adj_flow_matrix(size, edge_index, capacities):
     return (torch_geometric.utils.to_dense_adj(edge_index).squeeze().bool(),
             torch_geometric.utils.to_dense_adj(edge_index, edge_attr=capacities).squeeze())
@@ -68,11 +72,13 @@ def interrupted(_interrupted=[False], _default=[None]):
     return _interrupted[0]
 
 def add_self_loops(batch):
-    edge_attr = batch.edge_attr[:, 0]
-    edge_cap = batch.edge_attr[:, 1]
+    # edge_attr = batch.edge_attr[:, 0]
+    # edge_cap = batch.edge_attr[:, 1]
+    edge_attr = batch.edge_attr
     new_edge_index, edge_attr = torch_geometric.utils.add_self_loops(batch.edge_index, edge_attr, fill_value=0)
-    _, edge_cap = torch_geometric.utils.add_self_loops(batch.edge_index, edge_cap, fill_value=0)
-    batch.edge_attr = torch.cat((edge_attr.view(-1, 1), edge_cap.view(-1, 1)), dim=1)
+    # _, edge_cap = torch_geometric.utils.add_self_loops(batch.edge_index, edge_cap, fill_value=0)
+    # batch.edge_attr = torch.cat((edge_attr.view(-1, 1), edge_cap.view(-1, 1)), dim=1)
+    batch.edge_attr = edge_attr
     batch.edge_index = new_edge_index
     return batch
 

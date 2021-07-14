@@ -178,7 +178,10 @@ class AlgorithmBase(nn.Module):
         batch = utils.add_self_loops(batch) # also takes into account capacities/weights
         self.zero_tracking_losses_and_statistics()
         self.set_initial_last_states(batch, STEPS_SIZE, SOURCE_NODES)
-        adj_matrix, flow_matrix = utils.get_adj_flow_matrix(SIZE, batch.edge_index, batch.edge_attr[:, 1])
+        # adj_matrix, flow_matrix = utils.get_adj_flow_matrix(SIZE, batch.edge_index, batch.edge_attr[:, 1])
+        adj_matrix = utils.get_adj_matrix(batch.edge_index)
+        flow_matrix = None
+        # Caution: here we no longer have flow_matrix
         x, y = self.get_input_output_features(batch, SOURCE_NODES)
         self.mask, self.mask_cp, self.edge_mask = self.prepare_initial_masks(batch)
         assert self.mask_cp.all(), self.mask_cp

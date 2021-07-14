@@ -40,25 +40,6 @@ class BellFordNetwork(AlgorithmBase):
         if not use_ints:
             self.infinity = nn.Parameter(torch.randn(latent_features))
 
-        def printer(module, gradInp, gradOutp): # Printer for backward hook
-            print("GI", gradInp)
-            print("GO", gradOutp)
-            s=0
-            mx=-float('inf')
-            for gi in gradInp:
-                s += torch.sum(gi)
-                mx = max(mx, torch.max(gi))
-
-            print("GISUMAX", s, mx)
-            s=0
-            mx=-float('inf')
-            for go in gradOutp:
-                s += torch.sum(go)
-                mx = max(mx, torch.max(go))
-                print("GOSUMdim1", go.sum(dim=1))
-            print("GOSUMAX", s, mx)
-            input()
-
     def zero_tracking_losses_and_statistics(self):
         super().zero_tracking_losses_and_statistics()
         self.losses = {
@@ -123,7 +104,8 @@ class BellFordNetwork(AlgorithmBase):
                       continue_p, current_latent):
         super().update_states(continue_p, current_latent)
         DIM_LATENT = get_hyperparameters()["dim_latent"]
-        self.last_distances = torch.where(self.mask, utils.bit2integer(distances), self.last_distances)
+        # self.last_distances = torch.where(self.mask, utils.bit2integer(distances), self.last_distances)
+        self.last_distances = torch.where(self.mask, distances, self.last_distances)
         self.last_predecessors_p = torch.where(self.mask, predecessors_p, self.last_predecessors_p)
         self.last_output = self.last_distances
         
@@ -132,8 +114,8 @@ class BellFordNetwork(AlgorithmBase):
         hyperparameters = get_hyperparameters()
         DEVICE = hyperparameters["device"]
         DIM_LATENT = hyperparameters["dim_latent"]
-        DIM_NODES = hyperparameters["dim_nodes_BellFord"]
-        DIM_EDGES = hyperparameters["dim_edges_BellFord"]
+        DIM_NODES = hyperparameters["dim_nodes_BellmanFord"]
+        DIM_EDGES = hyperparameters["dim_edges_BellmanFord"]
 
         SIZE = batch.num_nodes
         super().set_initial_last_states(batch, STEPS_SIZE, SOURCE_NODES)
@@ -305,6 +287,10 @@ class BellFordNetwork(AlgorithmBase):
         encoded_nodes = self.node_encoder(inp)
         if self.steps == 0 and self.bits_size is None: # if we are not using integers we learn infinity embedding for the first step
             encoded_nodes[iimask] = self.infinity
+        print(edge_attr.shape)
+        print(edge_attr)
+        edge_attr = edge_attr.unsqueeze(dim=-1)
+        print(edge_attr.shape)
         encoded_edges = self.encode_edges(edge_attr)
 
         latent_nodes = self.processor(encoded_nodes, encoded_edges, utils.flip_edge_index(edge_index))

@@ -9,6 +9,7 @@ def get_hyperparameters():
         "dim_target": 2,
         "dim_edges": 2,
         "dim_edges_BFS": 1,
+        "dim_edges_BellmanFord": 1,
         "dim_bits": 8,
         "pna_aggregators": "mean min max std",
         "pna_scalers": "identity amplification attenuation",
