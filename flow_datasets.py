@@ -1,4 +1,5 @@
 import networkx as nx
+import numpy as np
 import os
 import re
 import torch
@@ -254,6 +255,10 @@ def get_random_adjacency_matrix(size):
         p = 0.6
         g = nx.generators.random_graphs.fast_gnp_random_graph(size, p)
         adj = torch.tensor(nx.to_numpy_matrix(g)).float()
+        for i in range(adj.shape[0]):
+            for j in range(adj.shape[1]):
+                if adj[i][j] > 0:
+                    adj[i][j] = np.random.uniform(0.2, 1.0)
     return adj
 
 class BellmanFordDataset(Dataset):
