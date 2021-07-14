@@ -82,6 +82,12 @@ def add_self_loops(batch):
     batch.edge_index = new_edge_index
     return batch
 
+def get_sizes_and_source(batch):
+    DEVICE = get_hyperparameters()["device"]
+    GRAPH_SIZES = torch.unique(batch.batch, return_counts=True)[1].to(DEVICE)
+    SOURCE_NODES = (GRAPH_SIZES.cumsum(0)-GRAPH_SIZES).clone().detach()
+    return GRAPH_SIZES, SOURCE_NODES
+
 def get_sizes_and_source_sink(batch):
     DEVICE = get_hyperparameters()["device"]
     GRAPH_SIZES = torch.unique(batch.batch, return_counts=True)[1].to(DEVICE)

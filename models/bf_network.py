@@ -208,10 +208,10 @@ class BellFordNetwork(AlgorithmBase):
 
     @overrides
     def get_losses_dict(self):
-        print(self.bits_size)
+        #print("bits_size", self.bits_size)
         denom = self.sum_of_processed_nodes
-        if self.bits_size is not None:
-            denom *= self.bits_size
+        #if self.bits_size is not None:
+            #denom *= self.bits_size
         return {
             "dist": self.losses["dist"] / float(denom) if self.sum_of_steps != 0 else 0,
             "pred": self.losses["pred"] / self.sum_of_processed_nodes if self.sum_of_steps != 0 else 0,
@@ -244,27 +244,19 @@ class BellFordNetwork(AlgorithmBase):
     def zero_validation_stats(self):
         super().zero_validation_stats()
         self.validation_losses = {
-            "total_loss_reachability": 0,
-            "total_loss_term": 0,
-        }
-        self.validation_predictions = {
-            "reachabilities": [],
-            "terminations": [],
-        }
-        self.validation_actual = {
-            "reachabilities": [],
-            "terminations": [],
+            "pred": 0,
+            "dist": 0,
+            "term": 0,
         }
 
-    def update_validation_stats(self, batch, reachabilities):
-        _, y = self.get_input_output_features(batch, None)
-        reachabilities_real = y[:, -1]
-        super().aggregate_last_step(reachabilities, reachabilities_real.squeeze())
+    def update_validation_stats(self, batch, predecessors):
+        _, SOURCE_NODES = utils.get_sizes_and_source(batch)
+        _, y = self.get_input_output_features(batch, SOURCE_NODES)
+        predecessors_real = y[:, -1, 0]
+
+        super().aggregate_last_step(predecessors, predecessors_real.squeeze())
         for key in self.validation_losses:
             self.validation_losses[key] += self.losses[key]
-        for key in self.validation_predictions:
-            self.validation_predictions[key].extend(self.predictions[key])
-            self.validation_actual[key].extend(self.actual[key])
             
     def encode_edges(self, edge_attr):
         if self.bits_size is not None:
@@ -287,10 +279,10 @@ class BellFordNetwork(AlgorithmBase):
         encoded_nodes = self.node_encoder(inp)
         if self.steps == 0 and self.bits_size is None: # if we are not using integers we learn infinity embedding for the first step
             encoded_nodes[iimask] = self.infinity
-        print(edge_attr.shape)
-        print(edge_attr)
+        #print(edge_attr.shape)
+        #print(edge_attr)
         edge_attr = edge_attr.unsqueeze(dim=-1)
-        print(edge_attr.shape)
+        #print(edge_attr.shape)
         encoded_edges = self.encode_edges(edge_attr)
 
         latent_nodes = self.processor(encoded_nodes, encoded_edges, utils.flip_edge_index(edge_index))
