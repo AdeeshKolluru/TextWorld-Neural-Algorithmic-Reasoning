@@ -1,6 +1,6 @@
 """
 Usage:
-    train.py [options] [--algorithms=ALGO]...
+    train_bellmanford.py [options] [--algorithms=ALGO]...
 
 Options:
     -h --help                        Show this screen.
@@ -90,7 +90,7 @@ def iterate_over(processor, optimizer=None, test=False):
         pass
 
 
-def load_algorithms(algorithms, processor, use_ints):
+def load_algorithms(algorithms, processor):
     hyperparameters = get_hyperparameters()
     DEVICE = hyperparameters["device"]
     DIM_LATENT = hyperparameters["dim_latent"]
@@ -137,18 +137,16 @@ if __name__ == "__main__":
     DEVICE = hyperparameters["device"]
     DIM_LATENT = hyperparameters["dim_latent"]
     DIM_EDGES = hyperparameters["dim_edges"]
+    
     NAME = (
-        args["--model-name"]
-        if args["--model-name"] is not None
-        else datetime.now().strftime("%b-%d-%Y-%H-%M")
+        'BellmanFord'+args["--processor-type"]+str(hyperparameters["lr"])+str(hyperparameters["weight_decay"])
     )
-
     processor = models.AlgorithmProcessor(
         DIM_LATENT, SingleIterationDataset, args["--processor-type"]
     ).to(DEVICE)
     print("PARAMETERS", sum(p.numel() for p in processor.parameters()))
     print(list((name, p.numel()) for name, p in processor.named_parameters()))
-    load_algorithms(args["--algorithms"], processor, True)
+    load_algorithms(args["--algorithms"], processor)
     # processor.reset_all_weights()
     params = list(processor.parameters())
     print(DEVICE)
@@ -187,7 +185,7 @@ if __name__ == "__main__":
         optimizer = optim.Adam(
             params,
             lr=hyperparameters["lr"],
-            weight_decay=hyperparameters["weight_decay"],
+            weight_decay=hyperparameters["weight_decay"]
         )
         for epoch in range(3000):  # FIXME
             if interrupted():
@@ -233,7 +231,7 @@ if __name__ == "__main__":
                 )
 
             if final_step_acc >= best_final_acc or total_loss <= best_loss or mean_step_acc >= best_mean_acc:
-                if final_step_acc > best_final_acc:
+                if final_step_acc >= best_final_acc:
                     best_model.load_state_dict(copy.deepcopy(processor.state_dict()))
                 best_final_acc = np.max((final_step_acc, best_final_acc))
                 best_mean_acc = np.max((mean_step_acc, best_mean_acc))
@@ -254,13 +252,14 @@ if __name__ == "__main__":
                 )
             )
 
-            os.makedirs(f"checkpoints/{NAME}", exist_ok=True)
-            torch.save(
-                processor.state_dict(),
-                f"checkpoints/{NAME}/test_{NAME}_epoch_" + str(epoch) + ".pt",
-            )
+            #os.makedirs(f"checkpoints/{NAME}", exist_ok=True)
+            #torch.save(
+            #    processor.state_dict(),
+            #    f"checkpoints/{NAME}/test_{NAME}_epoch_" + str(epoch) + ".pt",
+            #)
 
             if patience >= PATIENCE_LIMIT:
                 break
 
-    torch.save(best_model.state_dict(), f"checkpoints/{NAME}/best_{NAME}.pt")
+    os.makedirs(f"best_models/", exist_ok=True)
+    torch.save(best_model.state_dict(), f"best_models/best_{NAME}.pt")
