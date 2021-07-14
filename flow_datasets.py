@@ -1,3 +1,4 @@
+import networkx as nx
 import os
 import re
 import torch
@@ -240,6 +241,21 @@ def b_f(adj):
         predecessors.append(p)
     return torch.stack(res), torch.stack(predecessors)
 
+def get_random_adjacency_matrix(size):
+    trivial = False
+    if trivial:
+        threshold = 0.3
+        adj = torch.rand(size, size)
+        adj = (adj + adj.T) / 2
+        adj[adj < threshold] = 0
+        for i in range(size):
+            adj[i, i] = 0
+    else:
+        p = 0.6
+        g = nx.generators.random_graphs.fast_gnp_random_graph(size, p)
+        adj = torch.tensor(nx.to_numpy_matrix(g)).float()
+    return adj
+
 class BellmanFordDataset(Dataset):
     def __init__(self, root, device='cuda', split='train', transform=None, pre_transform=None, *args, **kwargs):
         self.device = device
@@ -334,11 +350,7 @@ class BellmanFordDataset(Dataset):
             idx = 0
             for size in sizes:
                 for c in range(number_of_graphs):
-                    adj = torch.rand(size, size)
-                    adj = (adj + adj.T) / 2
-                    adj[adj < threshold] = 0
-                    for i in range(size):
-                        adj[i, i] = 0
+                    adj = get_random_adjacency_matrix(size)
                     t, p = b_f(adj)
                     filename = os.path.join(dirname, f"{idx}.pt")
                     torch.save({"adj": adj, "values": t, "predecessors": p}, filename)
