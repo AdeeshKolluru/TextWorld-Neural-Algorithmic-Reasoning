@@ -350,6 +350,15 @@ class BellmanFordDataset(Dataset):
             elif self.split == "test":
                 number_of_graphs = 5
                 sizes = [20, 50, 100]
+            elif self.split == "test_30":
+                number_of_graphs = 20
+                sizes = [30]
+            elif self.split == "test_50":
+                number_of_graphs = 20
+                sizes = [50]
+            elif self.split == "test_100":
+                number_of_graphs = 20
+                sizes = [100]
             threshold = 0.3
 
             idx = 0
