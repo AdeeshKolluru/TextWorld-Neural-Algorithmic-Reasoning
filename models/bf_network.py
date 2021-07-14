@@ -64,10 +64,10 @@ class BellFordNetwork(AlgorithmBase):
         y = batch.y.clone()
         mask_x = BellFordNetwork.get_input_infinity_mask(batch.x)
         mask_y = BellFordNetwork.get_input_infinity_mask(batch.y)
-        x[:, :, 1] += SOURCE_NODES[batch.batch].unsqueeze(1)
-        y[:, :, 1] += SOURCE_NODES[batch.batch].unsqueeze(1)
-        x[:, :, 1][mask_x] = 255
-        y[:, :, 1][mask_y] = 255
+        x[:, :, 0] += SOURCE_NODES[batch.batch].unsqueeze(1)
+        y[:, :, 0] += SOURCE_NODES[batch.batch].unsqueeze(1)
+        x[:, :, 0][mask_x] = 255
+        y[:, :, 0][mask_y] = 255
         return x, y
     
     def get_input_infinity_mask(inp):

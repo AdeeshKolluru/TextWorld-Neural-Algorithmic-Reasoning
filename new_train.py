@@ -130,15 +130,15 @@ if __name__ == "__main__":
 
             patience += 1
             print('Epoch {:4d}: \n'.format(epoch), end=' ')
-            processor.eval()
-            iterate_over(processor)
+            # processor.eval()
+            # iterate_over(processor)
 
             # metrics reporting code are removed temporarily for simplicity
 
             os.makedirs(f"checkpoints/{NAME}", exist_ok=True)
             torch.save(processor.state_dict(), f'checkpoints/{NAME}/test_{NAME}_epoch_'+str(epoch)+'.pt')
 
-            if patience >= PATIENCE_LIMIT:
-                break
+            # if patience >= PATIENCE_LIMIT:
+            #     break
 
     # torch.save(best_model.state_dict(), f'checkpoints/{NAME}/best_{NAME}.pt')
