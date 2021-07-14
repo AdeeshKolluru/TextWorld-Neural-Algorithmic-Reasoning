@@ -122,11 +122,13 @@ if __name__ == "__main__":
     SIGMOID_OFFSET = hyperparameters["sigmoid_offset"]
 
     patience = 0
-    last_mean = 0
-    last_final = 0
-    last_broken = 100
-    last_loss = 0*1e9 if augmenting_path_network is not None else 1e9
-    cnt = 0
+    #last_mean = 0
+    #last_final = 0
+    #last_loss = 0*1e9 if augmenting_path_network is not None else 1e9
+    #cnt = 0
+    best_final_acc = 0
+    best_mean_acc = 0
+    best_loss = np.inf
 
     fmt = get_print_format()
 
@@ -161,11 +163,15 @@ if __name__ == "__main__":
                         if
                         processor.algorithms["BellmanFord"].true_positive+processor.algorithms["BellmanFord"].false_negative
                         else 'N/A')
-
-            if (final_step_acc) > last_loss:
-                    patience = 0
-                    last_loss = (final_step_acc)
-                    best_model.load_state_dict(copy.deepcopy(processor.state_dict()))
+                   
+            if final_step_acc >= best_final_acc or total_loss <= best_loss or mean_step_acc >= best_mean_acc:
+                best_final_acc = np.max((final_step_acc, best_final_acc))
+                best_mean_acc = np.max((mean_step_acc, best_mean_acc))
+                best_loss = np.min((total_loss, best_loss))
+                best_model.load_state_dict(copy.deepcopy(processor.state_dict()))
+                patience = 0
+            else:
+                patience += 1
                     
             # metrics reporting code are removed temporarily for simplicity
             
