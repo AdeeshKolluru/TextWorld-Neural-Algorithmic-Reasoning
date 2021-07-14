@@ -149,8 +149,8 @@ class BellFordNetwork(AlgorithmBase):
         DEVICE = 'cuda' if y_curr.is_cuda else 'cpu'
         zero_selector = torch.tensor([0], dtype=torch.long, device=DEVICE)
         one_selector = torch.tensor([1], dtype=torch.long, device=DEVICE)
-        distances_real = torch.index_select(y_curr, 1, zero_selector).squeeze()
-        predecessors_real = torch.index_select(y_curr, 1, one_selector).long().squeeze()
+        distances_real = torch.index_select(y_curr, 1, one_selector).squeeze()
+        predecessors_real = torch.index_select(y_curr, 1, zero_selector).long().squeeze()
         return distances_real, predecessors_real
     
     
