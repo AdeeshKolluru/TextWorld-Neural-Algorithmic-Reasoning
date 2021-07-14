@@ -275,6 +275,7 @@ class BellmanFordDataset(Dataset):
         for raw_path in sorted(self.raw_paths, key=alphanum_key):
             data_dict = torch.load(raw_path)
             adj = data_dict["adj"]
+            num_nodes = adj.shape[0]
             values = data_dict["values"]
             predecessors = data_dict["predecessors"]
 
@@ -290,20 +291,23 @@ class BellmanFordDataset(Dataset):
             edge_attr = torch.tensor(edge_attr)
 
             # like in the paper we concatenate so that the predecessor is first and then the values
-            #print("pred", predecessors)
-            #print("val", values)
             predecessors = predecessors.float().unsqueeze(2)
             values = values.unsqueeze(2)
             features = torch.cat((predecessors, values), dim=2)
-            #print(features)
             features = torch.transpose(features, 0, 1)
+            # repeat the last iteration, so that all graphs have the same number of iterations
+            last_row = features[:, -1, :].unsqueeze(1)
+            last_row = last_row.repeat(1, num_nodes-1-features.shape[1], 1)
+            features = torch.cat((features, last_row), dim=1)
             #print(features)
             #print(features.shape)
 
             target_features = features.clone().detach()[:, 1:, :]
             # repeat last row of target features
-            target_features = torch.cat((target_features, target_features[:, -1, :].unsqueeze(1)), dim=1)
+            last_row = target_features[:, -1, :].unsqueeze(1)
+            target_features = torch.cat((target_features, last_row), dim=1)
             #print(target_features)
+            #print(target_features.shape)
 
             data = Data(features, edge_index, edge_attr, y=target_features)
             if not os.path.exists(dirname):
@@ -360,3 +364,8 @@ if __name__ == '__main__':
     print(f[0].x, f[0].x.shape)
     print(f[0].y, f[0].y.shape)
     print(f[0].num_nodes)
+
+    from torch_geometric.data import DataLoader
+    dataloader = DataLoader(f, batch_size=4, shuffle=True, drop_last=False, num_workers=8)
+    for i in dataloader:
+        print(i)
