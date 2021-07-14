@@ -232,7 +232,7 @@ if __name__ == "__main__":
                     else "N/A",
                 )
 
-             if final_step_acc >= best_final_acc or total_loss <= best_loss or mean_step_acc >= best_mean_acc:
+            if final_step_acc >= best_final_acc or total_loss <= best_loss or mean_step_acc >= best_mean_acc:
                 if final_step_acc > best_final_acc:
                     best_model.load_state_dict(copy.deepcopy(processor.state_dict()))
                 best_final_acc = np.max((final_step_acc, best_final_acc))
