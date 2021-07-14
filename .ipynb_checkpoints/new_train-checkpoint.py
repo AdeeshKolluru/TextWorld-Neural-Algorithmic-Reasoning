@@ -24,19 +24,10 @@ from torch_geometric.data import DataLoader
 
 import flow_datasets
 import models
-from flow_datasets import SingleIterationDataset, BellmanFordDataset
+from flow_datasets import SingleIterationDataset
 from hyperparameters import get_hyperparameters
-from utils import interrupted
+from utils import get_print_format, get_print_info, interrupted
 
-def get_print_format():
-    fmt = """
-==========================
-Mean step acc: {:.4f}    Last step acc: {:.4f}
-loss-(dist,pred,term,total): {:.4f} {:.4f} {:.4f} {:.4f}
-patience: {}
-===============
-"""
-    return fmt
 
 def iterate_over(processor, optimizer=None, test=False):
     hyperparameters = get_hyperparameters()
@@ -80,17 +71,9 @@ def load_algorithms(algorithms, processor, use_ints):
     DIM_EDGES = hyperparameters["dim_edges_BellmanFord"]
     for algorithm in algorithms:
         if algorithm == "BellmanFord":
-            #algo_net = models.BellFordNetwork(DIM_LATENT, DIM_NODES_BellmanFord, DIM_EDGES, processor, flow_datasets.BellmanFordDataset, './BellmanFord', use_ints=True, bits_size=8).to(DEVICE)
-            algo_net = models.BellFordNetwork(DIM_LATENT, DIM_NODES_BellmanFord, DIM_EDGES, processor, BellmanFordDataset, './BellmanFord').to(DEVICE)
+            algo_net = models.BellFordNetwork(DIM_LATENT, DIM_NODES_BellmanFord, DIM_EDGES, processor, flow_datasets.BellmanFordDataset, './BellmanFord').to(DEVICE)
         processor.add_algorithm(algo_net, algorithm)
 
-def get_print_info(bf_network):
-    total_loss_dist, total_loss_pred, total_loss_term = bf_network.get_validation_losses()
-    mean_step, final_step = bf_network.get_validation_accuracies()
-    total_loss = total_loss_dist + total_loss_pred + total_loss_term
-    #broken_invariants, broken_reachabilities, broken_flows, broken_all = bf_network.get_broken_invariants()
-    #len_broken = len(broken_invariants)
-    return total_loss_dist, total_loss_pred, total_loss_term, total_loss, mean_step, final_step#, tnr, subtract_acc, broken_invariants, broken_reachabilities, broken_flows, broken_all, len_broken
 
 
 if __name__ == "__main__":
@@ -128,11 +111,11 @@ if __name__ == "__main__":
     last_loss = 0*1e9 if augmenting_path_network is not None else 1e9
     cnt = 0
 
-    fmt = get_print_format()
+    # fmt = get_print_format()
 
-    best_model = models.AlgorithmProcessor(DIM_LATENT, BellmanFordDataset, args["--processor-type"]).to(DEVICE)
-    best_model.algorithms = nn.ModuleDict(processor.algorithms.items())
-    best_model.load_state_dict(copy.deepcopy(processor.state_dict()))
+    # best_model = models.AlgorithmProcessor(DIM_LATENT, SingleIterationDataset, args["--processor-type"]).to(DEVICE)
+    # best_model.algorithms = nn.ModuleDict(processor.algorithms.items())
+    # best_model.load_state_dict(copy.deepcopy(processor.state_dict()))
 
     torch.set_printoptions(precision=20)
 
@@ -149,34 +132,8 @@ if __name__ == "__main__":
             print('Epoch {:4d}: \n'.format(epoch), end=' ')
             processor.eval()
             iterate_over(processor)
-            total_loss_dist, total_loss_pred, total_loss_term, total_loss, mean_step_acc, final_step_acc = get_print_info(processor.algorithms["BellmanFord"])
-            if get_hyperparameters()["calculate_termination_statistics"]: #DEPRECATED
-                print("Term precision:",
-                    processor.algorithms["BellmanFord"].true_positive/(processor.algorithms["BellmanFord"].true_positive+processor.algorithms["BellmanFord"].false_positive)
-                        if
-                        processor.algorithms["BellmanFord"].true_positive+processor.algorithms["BellmanFord"].false_positive
-                        else 'N/A')
-                print("Term recall:",
-                    processor.algorithms["BellmanFord"].true_positive/(processor.algorithms["BellmanFord"].true_positive+processor.algorithms["BellmanFord"].false_negative)
-                        if
-                        processor.algorithms["BellmanFord"].true_positive+processor.algorithms["BellmanFord"].false_negative
-                        else 'N/A')
 
-            if (final_step_acc) > last_loss:
-                    patience = 0
-                    last_loss = (final_step_acc)
-                    best_model.load_state_dict(copy.deepcopy(processor.state_dict()))
-                    
             # metrics reporting code are removed temporarily for simplicity
-            
-            print(fmt.format(
-                    mean_step_acc,
-                    final_step_acc,
-                    total_loss_dist,
-                    total_loss_pred,
-                    total_loss_term,
-                    total_loss,
-                    patience))
 
             os.makedirs(f"checkpoints/{NAME}", exist_ok=True)
             torch.save(processor.state_dict(), f'checkpoints/{NAME}/test_{NAME}_epoch_'+str(epoch)+'.pt')
@@ -184,4 +141,4 @@ if __name__ == "__main__":
             if patience >= PATIENCE_LIMIT:
                 break
 
-    torch.save(best_model.state_dict(), f'checkpoints/{NAME}/best_{NAME}.pt')
+    # torch.save(best_model.state_dict(), f'checkpoints/{NAME}/best_{NAME}.pt')

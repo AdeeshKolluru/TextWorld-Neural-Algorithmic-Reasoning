@@ -16,7 +16,7 @@ def get_hyperparameters():
         "batch_size": 32,
         "walk_length": 5,
         "max_threshold": 10,
-        "patience_limit": 10,
+        "patience_limit": 100,
         "growth_rate_sigmoid": 0.0020,
         "sigmoid_offset": -300,
         # "device": "cuda" if torch.cuda.is_available() else "cpu",
