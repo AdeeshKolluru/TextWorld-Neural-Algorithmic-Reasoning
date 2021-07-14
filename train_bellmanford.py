@@ -44,6 +44,8 @@ def iterate_over(processor, optimizer=None, test=False):
     hyperparameters = get_hyperparameters()
     DEVICE = hyperparameters["device"]
     BATCH_SIZE = hyperparameters["batch_size"]
+    if test:
+        BATCH_SIZE = hyperparameters["test_batch_size"]
 
     for algorithm in processor.algorithms.values():
         if processor.training:
