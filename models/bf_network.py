@@ -17,28 +17,36 @@ from overrides import overrides
 class BellFordNetwork(AlgorithmBase):
     def __init__(self, latent_features, node_features, edge_features, algo_processor, dataset_class, dataset_root, bias=False, use_ints=False, bits_size=None):
         super(BellFordNetwork, self).__init__(latent_features, node_features, edge_features, bits_size if use_ints else 1, algo_processor, dataset_class, dataset_root, bias=bias)
+        self.init_helper(bits_size, use_ints, latent_features, bias, node_features, edge_features)
+        self.init_node_encoder()
+
+    def init_helper(self, bits_size, use_ints, latent_features, bias, node_features, edge_features):
+        # we need this to reuse the code in NaturalBellFordNetwork
         self.bits_size = bits_size
         if use_ints:
             self.bit_encoder = nn.Sequential(
                 nn.Linear(bits_size, latent_features, bias=bias),
                 nn.LeakyReLU()
             )
-
-        ne_input_features = 2*latent_features if use_ints else node_features+latent_features
-        self.node_encoder = nn.Sequential(
-            nn.Linear(ne_input_features, latent_features, bias=bias),
-            nn.LeakyReLU()
-        )
-
-        ee_input_features = 2*latent_features if use_ints else edge_features
-        self.edge_encoder = nn.Sequential(
-            nn.Linear(ee_input_features, latent_features, bias=bias),
-            nn.LeakyReLU()
-        )
+        self.ne_input_features = 2*latent_features if use_ints else node_features+latent_features
 
         self.pred_network = PredecessorNetwork(latent_features, latent_features, bias=bias)
         if not use_ints:
             self.infinity = nn.Parameter(torch.randn(latent_features))
+        ee_input_features = 2 * latent_features if use_ints else edge_features
+
+        self.edge_encoder = nn.Sequential(
+            nn.Linear(ee_input_features, latent_features, bias=bias),
+            nn.LeakyReLU()
+        )
+        self.latent_features = latent_features
+        self.bias = bias
+
+    def init_node_encoder(self):
+        self.node_encoder = nn.Sequential(
+            nn.Linear(self.ne_input_features, self.latent_features, bias=self.bias),
+            nn.LeakyReLU()
+        )
 
     def zero_tracking_losses_and_statistics(self):
         super().zero_tracking_losses_and_statistics()
@@ -311,4 +319,12 @@ class BellFordNetwork(AlgorithmBase):
         distances = output.squeeze()
         continue_p = self.get_continue_p(batch_ids, latent_nodes, GRAPH_SIZES)
         return latent_nodes, distances, predecessors, continue_p
+
+class NaturalBellFordNetwork(BellFordNetwork):
+    def init_node_encoder(self):
+        self.node_encoder = nn.LSTM(self.ne_input_features, self.latent_features, bias=self.bias)
+
+
+
+
 
