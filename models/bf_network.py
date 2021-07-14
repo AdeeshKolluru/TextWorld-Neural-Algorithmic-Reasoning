@@ -90,7 +90,7 @@ class BellFordNetwork(AlgorithmBase):
         return x, y
     
     def get_input_infinity_mask(inp):
-        mask = inp[:, :, 1] == 1
+        mask = inp[:, :, 1] == 255
         return mask
     
     def loop_body(self, batch, inp, true_termination, to_process,
