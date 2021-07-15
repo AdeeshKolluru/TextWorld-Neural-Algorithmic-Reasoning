@@ -458,7 +458,7 @@ class MazeDataset(Dataset):
             with open(raw_path, "rb") as infile:
                 maze_graph = pickle.load(infile)
             graph = self.initial_node_modification(maze_graph)
-            graph = from_networkx(maze_graph)
+            graph = from_networkx(graph)
             graph = self.create_input_observation(graph)
             if not os.path.exists(dirname):
                 os.mkdir(dirname)
