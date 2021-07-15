@@ -1,3 +1,5 @@
+import networkx as nx
+import numpy as np
 import os
 import re
 import torch
@@ -240,8 +242,27 @@ def b_f(adj):
         predecessors.append(p)
     return torch.stack(res), torch.stack(predecessors)
 
+def get_random_adjacency_matrix(size):
+    trivial = False
+    if trivial:
+        threshold = 0.3
+        adj = torch.rand(size, size)
+        adj = (adj + adj.T) / 2
+        adj[adj < threshold] = 0
+        for i in range(size):
+            adj[i, i] = 0
+    else:
+        p = 0.6
+        g = nx.generators.random_graphs.fast_gnp_random_graph(size, p)
+        adj = torch.tensor(nx.to_numpy_matrix(g)).float()
+        for i in range(adj.shape[0]):
+            for j in range(adj.shape[1]):
+                if adj[i][j] > 0:
+                    adj[i][j] = np.random.uniform(0.2, 1.0)
+    return adj
+
 class BellmanFordDataset(Dataset):
-    def __init__(self, root, device='cuda', split='train', transform=None, pre_transform=None):
+    def __init__(self, root, device='cuda', split='train', transform=None, pre_transform=None, *args, **kwargs):
         self.device = device
         assert split in ['train', 'val'] or 'test' in split
         self.split = split
@@ -275,6 +296,7 @@ class BellmanFordDataset(Dataset):
         for raw_path in sorted(self.raw_paths, key=alphanum_key):
             data_dict = torch.load(raw_path)
             adj = data_dict["adj"]
+            num_nodes = adj.shape[0]
             values = data_dict["values"]
             predecessors = data_dict["predecessors"]
 
@@ -290,20 +312,23 @@ class BellmanFordDataset(Dataset):
             edge_attr = torch.tensor(edge_attr)
 
             # like in the paper we concatenate so that the predecessor is first and then the values
-            #print("pred", predecessors)
-            #print("val", values)
             predecessors = predecessors.float().unsqueeze(2)
             values = values.unsqueeze(2)
             features = torch.cat((predecessors, values), dim=2)
-            #print(features)
             features = torch.transpose(features, 0, 1)
+            # repeat the last iteration, so that all graphs have the same number of iterations
+            last_row = features[:, -1, :].unsqueeze(1)
+            last_row = last_row.repeat(1, num_nodes-1-features.shape[1], 1)
+            features = torch.cat((features, last_row), dim=1)
             #print(features)
             #print(features.shape)
 
             target_features = features.clone().detach()[:, 1:, :]
             # repeat last row of target features
-            target_features = torch.cat((target_features, target_features[:, -1, :].unsqueeze(1)), dim=1)
+            last_row = target_features[:, -1, :].unsqueeze(1)
+            target_features = torch.cat((target_features, last_row), dim=1)
             #print(target_features)
+            #print(target_features.shape)
 
             data = Data(features, edge_index, edge_attr, y=target_features)
             if not os.path.exists(dirname):
@@ -325,22 +350,27 @@ class BellmanFordDataset(Dataset):
             elif self.split == "test":
                 number_of_graphs = 5
                 sizes = [20, 50, 100]
+            elif self.split == "test_30":
+                number_of_graphs = 20
+                sizes = [30]
+            elif self.split == "test_50":
+                number_of_graphs = 20
+                sizes = [50]
+            elif self.split == "test_100":
+                number_of_graphs = 20
+                sizes = [100]
             threshold = 0.3
 
             idx = 0
             for size in sizes:
                 for c in range(number_of_graphs):
-                    adj = torch.rand(size, size)
-                    adj = (adj + adj.T) / 2
-                    adj[adj < threshold] = 0
-                    for i in range(size):
-                        adj[i, i] = 0
+                    adj = get_random_adjacency_matrix(size)
                     t, p = b_f(adj)
                     filename = os.path.join(dirname, f"{idx}.pt")
                     torch.save({"adj": adj, "values": t, "predecessors": p}, filename)
                     idx += 1
 
-    def get(self, idx):
+    def __getitem__(self, idx):
         if not os.path.isdir(os.path.join(self.processed_dir, self.split)):
             if not os.path.isdir(os.path.join(self.raw_dir, self.split)):
                 self.download()
@@ -350,22 +380,18 @@ class BellmanFordDataset(Dataset):
         return data
             
 if __name__ == '__main__':
-    #f = BFSSingleIterationDataset('./graph_only_BFS', split='test', less_wired=True, device='cpu', probp=3, probq=4)
-    #print(f[0].x.shape)
-    #print(f[0].y.shape)
-    #print(f[0].x[:, 0])
-    #print("x", f[0].x)
-    #print("y", f[0].y)
-    #print(f[0].capacities)
-    #print(f[0].num_nodes)
-
-    print("bf")
+    print("b_f")
     f = BellmanFordDataset("BellmanFord", split='train', device='cpu')
     print(f.root)
     print(f.processed_dir)
     print(f.raw_dir)
     # x  and y have shape (#nodes, #steps, #2), where the last dimension has 
     # the first element representing the predecessor and the second representing the value
-    print(f[0].x)
-    print(f[0].y)
+    print(f[0].x, f[0].x.shape)
+    print(f[0].y, f[0].y.shape)
     print(f[0].num_nodes)
+
+    from torch_geometric.data import DataLoader
+    dataloader = DataLoader(f, batch_size=4, shuffle=True, drop_last=False, num_workers=8)
+    for i in dataloader:
+        print(i)

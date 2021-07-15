@@ -127,9 +127,9 @@ class AlgorithmBase(nn.Module):
 
     def prepare_constants(self, batch):
         SIZE = batch.num_nodes
-        GRAPH_SIZES, SOURCE_NODES = utils.get_sizes_and_source(batch)
+        GRAPH_SIZES, SOURCE_NODES, SINK_NODES = utils.get_sizes_and_source_sink(batch)
         STEPS_SIZE = GRAPH_SIZES.max()
-        return SIZE, GRAPH_SIZES, SOURCE_NODES, STEPS_SIZE
+        return SIZE, GRAPH_SIZES, SOURCE_NODES, STEPS_SIZE, SINK_NODES
 
     def prepare_initial_masks(self, batch):
         DEVICE = get_hyperparameters()["device"]
@@ -173,7 +173,7 @@ class AlgorithmBase(nn.Module):
 
         DEVICE = get_hyperparameters()["device"]
         train = self.training
-        SIZE, GRAPH_SIZES, SOURCE_NODES, STEPS_SIZE = self.prepare_constants(batch)
+        SIZE, GRAPH_SIZES, SOURCE_NODES, STEPS_SIZE, SINK_NODES = self.prepare_constants(batch)
 
         batch = utils.add_self_loops(batch) # also takes into account capacities/weights
         self.zero_tracking_losses_and_statistics()
