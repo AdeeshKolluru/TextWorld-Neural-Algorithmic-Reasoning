@@ -487,7 +487,7 @@ class MazeDataset(Dataset):
                     pickle.dump(mg, outfile)
 
     def __getitem__(self, idx):
-        if os.path.isdir(os.path.join(self.processed_dir, self.split)):
+        if not os.path.isdir(os.path.join(self.processed_dir, self.split)):
             if not os.path.isdir(os.path.join(self.raw_dir, self.split)):
                 self.download()
             self.process()
