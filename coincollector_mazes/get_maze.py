@@ -10,7 +10,7 @@ def build_game_options(seed: int) -> GameOptions:
     options.seeds = seed
     return options
 
-def add_shortest_path_info(G: nx.DiGraph, game: textworld.Game) -> nx.DiGraph:
+def add_shortest_path_info(G: nx.DiGraph) -> nx.DiGraph:
     # label all edges as not contained in shortest path
     for edge in G.edges:
         G.add_edge(edge[0], edge[1], contained_in_shortest_path=0)
@@ -82,7 +82,7 @@ def get_maze(level: int, seed: int) -> nx.DiGraph:
                 direc = 3
             G.add_edge(fact.names[0], fact.names[1], direction=direc)
 
-    G = add_shortest_path_info(G, game)
+    G = add_shortest_path_info(G)
 
     return G
 
