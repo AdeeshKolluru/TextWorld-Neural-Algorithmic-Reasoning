@@ -327,9 +327,9 @@ class BellFordNetwork(AlgorithmBase):
 class NaturalBellFordNetwork(BellFordNetwork):
     def init_node_encoder(self):
         self.node_encoder = nn.LSTM(self.ne_input_features, self.latent_features, bias=self.bias)
-        # self.word_embedding = Embedding(embedding_size=self.embedding_size,
-        #         vocab_size=self.word_vocab_size,
-        #         enable_cuda=self.device)
+        self.word_embedding = Embedding(embedding_size=self.ne_input_features,
+                vocab_size=10000,
+                enable_cuda=get_hyperparameters()["device"])
         # self.encoder = FastUniLSTM(ninp=self.embedding_size,
         #         nhids=self.encoder_rnn_hidden_size,
         #         dropout_between_rnn_layers=self.dropout_between_rnn_layers)
