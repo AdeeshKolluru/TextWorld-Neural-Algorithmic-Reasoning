@@ -294,6 +294,9 @@ class BellFordNetwork(AlgorithmBase):
         encoded_edges = self.edge_encoder(edge_attr)
         return encoded_edges
 
+    def encode_nodes(self, inp):
+        return self.node_encoder(inp)
+
     def forward(self, batch_ids, GRAPH_SIZES, current_input, last_latent, edge_index, edge_attr, iimask, edge_mask=None):
         SIZE = last_latent.shape[0]
         if self.bits_size is not None:
@@ -303,8 +306,8 @@ class BellFordNetwork(AlgorithmBase):
             current_input = current_input.unsqueeze(1)
 
         inp = torch.cat((current_input, last_latent), dim=1)
+        encoded_nodes = self.encode_nodes(inp)
 
-        encoded_nodes = self.node_encoder(inp)
         if self.steps == 0 and self.bits_size is None: # if we are not using integers we learn infinity embedding for the first step
             encoded_nodes[iimask] = self.infinity
         #print(edge_attr.shape)
@@ -323,16 +326,17 @@ class BellFordNetwork(AlgorithmBase):
 
 class NaturalBellFordNetwork(BellFordNetwork):
     def init_node_encoder(self):
-        self.node_encoder = nn.LSTM(self.ne_iniput_features, self.latent_features, bias=self.bias)
-        self.word_embedding = Embedding(embedding_size=self.embedding_size,
-                vocab_size=self.word_vocab_size,
-                enable_cuda=self.device)
-        self.encoder = FastUniLSTM(ninp=self.embedding_size,
-                nhids=self.encoder_rnn_hidden_size,
-                dropout_between_rnn_layers=self.dropout_between_rnn_layers)
+        self.node_encoder = nn.LSTM(self.ne_input_features, self.latent_features, bias=self.bias)
+        # self.word_embedding = Embedding(embedding_size=self.embedding_size,
+        #         vocab_size=self.word_vocab_size,
+        #         enable_cuda=self.device)
+        # self.encoder = FastUniLSTM(ninp=self.embedding_size,
+        #         nhids=self.encoder_rnn_hidden_size,
+        #         dropout_between_rnn_layers=self.dropout_between_rnn_layers)
+
+    def encode_nodes(self, inp):
         # TODO update the forward for LSTM - give required input format
-
-
+        return self.node_encoder(inp)
 
 
 
