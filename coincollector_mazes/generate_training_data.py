@@ -29,9 +29,22 @@ def generate_maze_data_with_seed(seed: int, number_of_mazes: int, difficulty_lev
         maze_list += [maze]
     return maze_list
 
+def generate_trivial_mazes(how_many: int, seed=100):
+    return generate_maze_data_with_seed(seed, how_many, difficulty_level=5, circles=0)
+
+def generate_normal_mazes(how_many: int, seed=100):
+    return generate_maze_data_with_seed(seed, how_many, difficulty_level=250, circles=0)
+
+def generate_hard_mazes_with_one_circle(how_many: int, seed=100):
+    return generate_maze_data_with_seed(seed, how_many, difficulty_level=250, circles=1)
+
+def generate_hard_mazes_with_many_circles(how_many: int, seed=100):
+    return generate_maze_data_with_seed(seed, how_many, difficulty_level=250, circles=150)
+
 
 if __name__ == '__main__':
     number_of_mazes = 10
-    maze_list = generate_maze_data_with_seed(100, number_of_mazes, difficulty_level=250, circles=200)
-    print_maze_info(maze_list[0])
-    print(len(maze_list))
+    # maze_list = generate_trivial_mazes(10)
+    # maze_list = generate_normal_mazes(10)
+    # maze_list = generate_hard_mazes_with_one_circle(10)
+    maze_list = generate_hard_mazes_with_many_circles(10)
