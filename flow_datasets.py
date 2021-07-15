@@ -5,7 +5,7 @@ import pickle
 import re
 import torch
 from torch_geometric.data import Dataset, Data
-from torch_geometric.utils import from_networkx
+#from torch_geometric.utils import from_networkx
 import torch.utils.data as torch_data
 
 from coincollector_mazes.generate_training_data import generate_maze_data_with_seed
@@ -384,6 +384,39 @@ class BellmanFordDataset(Dataset):
         return data
             
 
+def from_networkx(G):
+    r"""Converts a :obj:`networkx.Graph` or :obj:`networkx.DiGraph` to a
+    :class:`torch_geometric.data.Data` instance.
+
+    Args:
+        G (networkx.Graph or networkx.DiGraph): A networkx graph.
+    """
+
+    G = nx.convert_node_labels_to_integers(G, ordering="sorted")
+    G = G.to_directed() if not nx.is_directed(G) else G
+    edge_index = torch.LongTensor(list(G.edges)).t().contiguous()
+
+    data = {}
+
+    for i, (_, feat_dict) in enumerate(sorted(G.nodes(data=True), key=lambda x: x[0])):
+        for key, value in feat_dict.items():
+            data[str(key)] = [value] if i == 0 else data[str(key)] + [value]
+
+    for i, (_, _, feat_dict) in enumerate(G.edges(data=True)):
+        for key, value in feat_dict.items():
+            data[str(key)] = [value] if i == 0 else data[str(key)] + [value]
+
+    for key, item in data.items():
+        try:
+            data[key] = torch.tensor(item)
+        except ValueError:
+            pass
+
+    data['edge_index'] = edge_index.view(2, -1)
+    data = Data.from_dict(data)
+    data.num_nodes = G.number_of_nodes()
+
+    return data
 
 
 class MazeDataset(Dataset):
@@ -414,6 +447,7 @@ class MazeDataset(Dataset):
         if not os.path.isdir(os.path.join('./', self.processed_dir, self.split)):
             self.process()
         return (len([_ for _ in os.listdir(os.path.join(self.processed_dir, self.split))]))
+
     def get_vocab(self):
         cnt = 0
         self.word_vocab = []
@@ -474,7 +508,7 @@ class MazeDataset(Dataset):
             os.mkdir(dirname)
             if self.split == "train":
                 number_of_graphs = 10
-                seed = 101
+                seed = 100
             elif self.split == "val":
                 number_of_graphs = 5
                 seed = 200
@@ -511,12 +545,12 @@ if __name__ == '__main__':
     f = MazeDataset("MazeDataset", split='train', device='cpu')
     print(f.processed_dir)
     print(f.raw_dir)
-    print(f[0].is_starting_position) 
-    print(f[0].description) 
-    print(f[1].is_starting_position) 
-    print(f[1].description) 
+    print(len(f))
+    for i in f:
+        print(i.is_starting_position) 
+        #print(i.description) 
 
-    from torch_geometric.data import DataLoader
-    dataloader = DataLoader(f, batch_size=4, shuffle=True, drop_last=False, num_workers=8)
-    for i in dataloader:
-        print(i.is_starting_position)
+    #from torch_geometric.data import DataLoader
+    #dataloader = DataLoader(f, batch_size=4, shuffle=True, drop_last=False, num_workers=8)
+    #for i in dataloader:
+        #print(i.is_starting_position)
