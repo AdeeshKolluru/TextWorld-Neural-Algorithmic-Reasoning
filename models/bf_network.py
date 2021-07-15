@@ -329,14 +329,17 @@ class NaturalBellFordNetwork(BellFordNetwork):
         self.node_encoder = nn.LSTM(self.ne_input_features, self.latent_features, bias=self.bias)
         self.word_embedding = Embedding(embedding_size=self.ne_input_features,
                 vocab_size=10000,
-                enable_cuda=get_hyperparameters()["device"])
+                enable_cuda=get_hyperparameters()["device"] != 'cpu')
         # self.encoder = FastUniLSTM(ninp=self.embedding_size,
         #         nhids=self.encoder_rnn_hidden_size,
         #         dropout_between_rnn_layers=self.dropout_between_rnn_layers)
 
     def encode_nodes(self, inp):
         # TODO update the forward for LSTM - give required input format
-        return self.node_encoder(inp)
+        # TODO better if the dataset has long type, not doing conversion here
+        embedded = self.word_embedding(inp.type(torch.long))[0] # [0] to get the ouptut
+        # for lstm output [0] has the output, [1] will have hidden states and cell states.
+        return self.node_encoder(embedded)[0][:, -1]
 
 
 

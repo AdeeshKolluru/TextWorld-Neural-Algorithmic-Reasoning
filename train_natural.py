@@ -193,9 +193,6 @@ if __name__ == "__main__":
             processor.train()
             iterate_over(processor, optimizer)
 
-            import pdb; pdb.set_trace()
-
-
             patience += 1
             print("Epoch {:4d}: \n".format(epoch), end=" ")
             processor.eval()
