@@ -13,6 +13,7 @@ from layers import PredecessorNetwork, GAT
 from models import AlgorithmBase
 from overrides import overrides
 
+from textworld_helpers.layers import Embedding, masked_mean, FastUniLSTM
 
 class BellFordNetwork(AlgorithmBase):
     def __init__(self, latent_features, node_features, edge_features, algo_processor, dataset_class, dataset_root, bias=False, use_ints=False, bits_size=None):
@@ -322,7 +323,14 @@ class BellFordNetwork(AlgorithmBase):
 
 class NaturalBellFordNetwork(BellFordNetwork):
     def init_node_encoder(self):
-        self.node_encoder = nn.LSTM(self.ne_input_features, self.latent_features, bias=self.bias)
+        self.node_encoder = nn.LSTM(self.ne_iniput_features, self.latent_features, bias=self.bias)
+        self.word_embedding = Embedding(embedding_size=self.embedding_size,
+                vocab_size=self.word_vocab_size,
+                enable_cuda=self.device)
+        self.encoder = FastUniLSTM(ninp=self.embedding_size,
+                nhids=self.encoder_rnn_hidden_size,
+                dropout_between_rnn_layers=self.dropout_between_rnn_layers)
+        # TODO update the forward for LSTM - give required input format
 
 
 
