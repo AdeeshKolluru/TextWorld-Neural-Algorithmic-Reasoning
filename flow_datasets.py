@@ -1,10 +1,15 @@
 import networkx as nx
 import numpy as np
 import os
+import pickle
 import re
 import torch
 from torch_geometric.data import Dataset, Data
+from torch_geometric.utils import from_networkx
 import torch.utils.data as torch_data
+
+from coincollector_mazes.generate_training_data import generate_maze_data_with_seed
+from textworld_helpers.generic import to_np, to_pt, preproc, _words_to_ids, pad_sequences, max_len
 
 def read_edge_index(filehandle):
     edge_index=[[], []]
@@ -359,7 +364,6 @@ class BellmanFordDataset(Dataset):
             elif self.split == "test_100":
                 number_of_graphs = 20
                 sizes = [100]
-            threshold = 0.3
 
             idx = 0
             for size in sizes:
@@ -379,19 +383,140 @@ class BellmanFordDataset(Dataset):
         data = torch.load(os.path.join(self.processed_dir, self.split, '{}.pt'.format(idx))).to(self.device)
         return data
             
+
+
+
+class MazeDataset(Dataset):
+    def __init__(self, root, device='cuda', split='train', transform=None, pre_transform=None, *args, **kwargs):
+        self.device = device
+        assert split in ['train', 'val', 'test']
+        self.split = split
+        if not os.path.exists(root):
+            os.mkdir(root)
+            os.mkdir(os.path.join(root, "raw"))
+            os.mkdir(os.path.join(root, "processed"))
+        super(MazeDataset, self).__init__(root, transform, pre_transform)
+
+    @property
+    def raw_file_names(self):
+        dirname = os.path.join(self.raw_dir, self.split)
+        raw_file_names = [os.path.join(self.split, str(x)+'.pt') for x in range(0, folder_elements(dirname))]
+        return raw_file_names
+
+    @property
+    def processed_file_names(self):
+        processed_file_names = [os.path.join(self.split, str(x)+'.pt') for x in range(0, folder_elements(os.path.join(self.processed_dir, self.split)))]
+        return processed_file_names
+
+    def __len__(self):
+        if not os.path.isdir(os.path.join('./', self.raw_dir, self.split)):
+            self.download()
+        if not os.path.isdir(os.path.join('./', self.processed_dir, self.split)):
+            self.process()
+        return (len([_ for _ in os.listdir(os.path.join(self.processed_dir, self.split))]))
+    def get_vocab(self):
+        cnt = 0
+        self.word_vocab = []
+        dirname = os.path.join(self.processed_dir, self.split)
+        for raw_path in sorted(self.raw_paths, key=alphanum_key):
+            with open(raw_path, "rb") as infile:
+                maze_graph = pickle.load(infile)
+            graph = from_networkx(maze_graph)
+            for i in range(len(graph.description)):
+                self.word_vocab.extend(graph.description[i].split())
+        self.word_vocab = np.unique(self.word_vocab)
+        self.word2id = {w: i for i, w in enumerate(self.word_vocab)}
+
+    def create_input_observation(self, graph):
+        observation_id_list = [] 
+        for i in range(len(graph.description)):
+            observation_list = graph.description[i].split() 
+            observation_id_list.append([self.word2id[w] for w in observation_list])
+        observation_id_list = pad_sequences(observation_id_list, maxlen=100, padding='post').astype('int32')
+        input_observation = to_pt(observation_id_list, False)
+        graph.input_observation = input_observation
+        graph.description = None
+        return graph
+
+    def initial_node_modification(self, graph):
+        sp_dict = dict(graph.nodes(data="is_starting_position"))
+        for k, v in iter(sp_dict.items()):
+            if v==1:
+                start_node = k
+        if start_node == "r_0":
+            return graph
+        else:
+            mapping = {"r_0": start_node, start_node: "r_0"}
+            new_is_starting_position = {"r_0": {"is_starting_position": 1}, start_node: {"is_starting_position": 0}}
+            nx.set_node_attributes(graph, new_is_starting_position)
+            graph = nx.relabel_nodes(graph, mapping)
+            return graph
+
+    def process(self):
+        self.get_vocab()
+        cnt = 0
+        dirname = os.path.join(self.processed_dir, self.split)
+        for raw_path in sorted(self.raw_paths, key=alphanum_key):
+            with open(raw_path, "rb") as infile:
+                maze_graph = pickle.load(infile)
+            graph = self.initial_node_modification(maze_graph)
+            graph = from_networkx(graph)
+            graph = self.create_input_observation(graph)
+            if not os.path.exists(dirname):
+                os.mkdir(dirname)
+            torch.save(graph, os.path.join(dirname, '{}.pt'.format(cnt)))
+            cnt += 1
+
+    def download(self):
+        print("download")
+        dirname = os.path.join(self.raw_dir, self.split)
+        if not os.path.isdir(dirname):
+            os.mkdir(dirname)
+            if self.split == "train":
+                number_of_graphs = 10
+                seed = 101
+            elif self.split == "val":
+                number_of_graphs = 5
+                seed = 200
+            elif self.split == "test":
+                number_of_graphs = 20
+                seed = 300
+
+            maze_graphs = generate_maze_data_with_seed(seed, number_of_graphs)
+            for idx, mg in enumerate(maze_graphs):
+                filename = os.path.join(dirname, f"{idx}.pt")
+                with open(filename, "wb") as outfile:
+                    pickle.dump(mg, outfile)
+
+    def __getitem__(self, idx):
+        if not os.path.isdir(os.path.join(self.processed_dir, self.split)):
+            if not os.path.isdir(os.path.join(self.raw_dir, self.split)):
+                self.download()
+            self.process()
+        
+        data = torch.load(os.path.join(self.processed_dir, self.split, '{}.pt'.format(idx))).to(self.device)
+        return data
+
 if __name__ == '__main__':
-    print("b_f")
-    f = BellmanFordDataset("BellmanFord", split='train', device='cpu')
-    print(f.root)
-    print(f.processed_dir)
-    print(f.raw_dir)
+    #print("b_f")
+    #f = BellmanFordDataset("BellmanFord", split='train', device='cpu')
     # x  and y have shape (#nodes, #steps, #2), where the last dimension has 
     # the first element representing the predecessor and the second representing the value
-    print(f[0].x, f[0].x.shape)
-    print(f[0].y, f[0].y.shape)
-    print(f[0].num_nodes)
+    #print(f[0]) 
+    #print(f[0].x, f[0].x.shape)
+    #print(f[0].y, f[0].y.shape)
+    #print(f[0].num_nodes)
+
+    print("maze")
+    f = MazeDataset("MazeDataset", split='train', device='cpu')
+    print(f.processed_dir)
+    print(f.raw_dir)
+    print(f[0].is_starting_position) 
+    print(f[0].description) 
+    print(f[1].is_starting_position) 
+    print(f[1].description) 
 
     from torch_geometric.data import DataLoader
     dataloader = DataLoader(f, batch_size=4, shuffle=True, drop_last=False, num_workers=8)
     for i in dataloader:
-        print(i)
+        print(i.is_starting_position)
