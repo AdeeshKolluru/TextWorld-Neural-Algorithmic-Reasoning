@@ -2,6 +2,7 @@ import torch
 def get_hyperparameters():
     return {
         "dim_latent": 64,
+        "dim_maze_out": 32,
         "dim_nodes_AugmentingPath": 1,
         "dim_nodes_AugmentingPath_integers": 1,
         "dim_nodes_BFS": 1,
@@ -15,6 +16,7 @@ def get_hyperparameters():
         "pna_scalers": "identity amplification attenuation",
         "batch_size": 32,
         "test_batch_size": 5,
+        "maze_batch_size": 5,
         "walk_length": 5,
         "max_threshold": 10,
         "patience_limit": 20,
@@ -24,8 +26,10 @@ def get_hyperparameters():
         "device": "cpu",
         "calculate_termination_statistics": True,
         "lr": 0.00100,
-        "weight_decay": 5e-4,
+        "weight_decay": 0,
         "test_lr": 0.00100,
-        "test_weight_decay": 5e-4,
+        "test_weight_decay": 0,
+        "maze_lr": 0.00100,
+        "maze_weight_decay": 0,
         "bias": False,
     }
