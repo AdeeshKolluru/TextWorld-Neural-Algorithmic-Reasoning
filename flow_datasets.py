@@ -447,6 +447,8 @@ class MazeDataset(Dataset):
             return graph
         else:
             mapping = {"r_0": start_node, start_node: "r_0"}
+            new_is_starting_position = {"r_0": {"is_starting_position": 1}, start_node: {"is_starting_position": 0}}
+            nx.set_node_attributes(graph, new_is_starting_position)
             graph = nx.relabel_nodes(graph, mapping)
             return graph
 
@@ -471,8 +473,8 @@ class MazeDataset(Dataset):
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
             if self.split == "train":
-                number_of_graphs = 100
-                seed = 100
+                number_of_graphs = 10
+                seed = 101
             elif self.split == "val":
                 number_of_graphs = 5
                 seed = 200
@@ -509,9 +511,12 @@ if __name__ == '__main__':
     f = MazeDataset("MazeDataset", split='train', device='cpu')
     print(f.processed_dir)
     print(f.raw_dir)
-    print(f[1]) 
+    print(f[0].is_starting_position) 
+    print(f[0].description) 
+    print(f[1].is_starting_position) 
+    print(f[1].description) 
 
     from torch_geometric.data import DataLoader
     dataloader = DataLoader(f, batch_size=4, shuffle=True, drop_last=False, num_workers=8)
     for i in dataloader:
-        print(i)
+        print(i.is_starting_position)
