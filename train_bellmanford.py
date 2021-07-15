@@ -142,7 +142,7 @@ if __name__ == "__main__":
         'BellmanFord'+args["--processor-type"]+str(hyperparameters["lr"])+str(hyperparameters["weight_decay"])
     )
     processor = models.AlgorithmProcessor(
-        DIM_LATENT, SingleIterationDataset, args["--processor-type"]
+        DIM_LATENT, BellmanFordDataset, args["--processor-type"]
     ).to(DEVICE)
     print("PARAMETERS", sum(p.numel() for p in processor.parameters()))
     print(list((name, p.numel()) for name, p in processor.named_parameters()))
