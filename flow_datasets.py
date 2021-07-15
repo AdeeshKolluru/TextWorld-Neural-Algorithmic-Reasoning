@@ -9,6 +9,7 @@ from torch_geometric.utils import from_networkx
 import torch.utils.data as torch_data
 
 from coincollector_mazes.generate_training_data import generate_maze_data_with_seed
+from textworld_helpers.generic import to_np, to_pt, preproc, _words_to_ids, pad_sequences, max_len
 
 def read_edge_index(filehandle):
     edge_index=[[], []]
@@ -413,15 +414,52 @@ class MazeDataset(Dataset):
         if not os.path.isdir(os.path.join('./', self.processed_dir, self.split)):
             self.process()
         return (len([_ for _ in os.listdir(os.path.join(self.processed_dir, self.split))]))
-
-    def process(self):
+    def get_vocab(self):
         cnt = 0
+        self.word_vocab = []
         dirname = os.path.join(self.processed_dir, self.split)
         for raw_path in sorted(self.raw_paths, key=alphanum_key):
             with open(raw_path, "rb") as infile:
                 maze_graph = pickle.load(infile)
             graph = from_networkx(maze_graph)
+            for i in range(len(graph.description)):
+                self.word_vocab.extend(graph.description[i].split())
+        self.word_vocab = np.unique(self.word_vocab)
+        self.word2id = {w: i for i, w in enumerate(self.word_vocab)}
 
+    def create_input_observation(self, graph):
+        observation_id_list = [] 
+        for i in range(len(graph.description)):
+            observation_list = graph.description[i].split() 
+            observation_id_list.append([self.word2id[w] for w in observation_list])
+        observation_id_list = pad_sequences(observation_id_list, maxlen=100, padding='post').astype('int32')
+        input_observation = to_pt(observation_id_list, False)
+        graph.input_observation = input_observation
+        graph.description = None
+        return graph
+
+    def initial_node_modification(self, graph):
+        sp_dict = dict(graph.nodes(data="is_starting_position"))
+        for k, v in iter(sp_dict.items()):
+            if v==1:
+                start_node = k
+        if start_node == "r_0":
+            return graph
+        else:
+            mapping = {"r_0": start_node, start_node: "r_0"}
+            graph = nx.relabel_nodes(graph, mapping)
+            return graph
+
+    def process(self):
+        self.get_vocab()
+        cnt = 0
+        dirname = os.path.join(self.processed_dir, self.split)
+        for raw_path in sorted(self.raw_paths, key=alphanum_key):
+            with open(raw_path, "rb") as infile:
+                maze_graph = pickle.load(infile)
+            graph = self.initial_node_modification(maze_graph)
+            graph = from_networkx(maze_graph)
+            graph = self.create_input_observation(graph)
             if not os.path.exists(dirname):
                 os.mkdir(dirname)
             torch.save(graph, os.path.join(dirname, '{}.pt'.format(cnt)))
@@ -449,7 +487,7 @@ class MazeDataset(Dataset):
                     pickle.dump(mg, outfile)
 
     def __getitem__(self, idx):
-        if not os.path.isdir(os.path.join(self.processed_dir, self.split)):
+        if os.path.isdir(os.path.join(self.processed_dir, self.split)):
             if not os.path.isdir(os.path.join(self.raw_dir, self.split)):
                 self.download()
             self.process()
@@ -471,7 +509,7 @@ if __name__ == '__main__':
     f = MazeDataset("MazeDataset", split='train', device='cpu')
     print(f.processed_dir)
     print(f.raw_dir)
-    print(f[0]) 
+    print(f[1]) 
 
     from torch_geometric.data import DataLoader
     dataloader = DataLoader(f, batch_size=4, shuffle=True, drop_last=False, num_workers=8)
