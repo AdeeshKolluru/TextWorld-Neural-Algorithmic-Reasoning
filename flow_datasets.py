@@ -434,12 +434,15 @@ class MazeDataset(Dataset):
             os.mkdir(dirname)
             if self.split == "train":
                 number_of_graphs = 100
+                seed = 100
             elif self.split == "val":
                 number_of_graphs = 5
+                seed = 200
             elif self.split == "test":
                 number_of_graphs = 20
+                seed = 300
 
-            maze_graphs = generate_maze_data_with_seed(seed=100, number_of_mazes=number_of_graphs)
+            maze_graphs = generate_maze_data_with_seed(seed, number_of_graphs)
             for idx, mg in enumerate(maze_graphs):
                 filename = os.path.join(dirname, f"{idx}.pt")
                 with open(filename, "wb") as outfile:
