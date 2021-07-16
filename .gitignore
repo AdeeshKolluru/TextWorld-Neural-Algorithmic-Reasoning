@@ -1,2 +1,7 @@
 *__pycache__*
 .idea
+*checkpoints*
+*.pt
+BellmanFord/
+MazeDataset/
+best_models/
