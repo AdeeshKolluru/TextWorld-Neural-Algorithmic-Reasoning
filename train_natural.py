@@ -97,14 +97,13 @@ def load_algorithms(algorithms, processor):
     DIM_EDGES = hyperparameters["dim_edges_BellmanFord"]
     for algorithm in algorithms:
         if algorithm == "BellmanFord":
-            # algo_net = models.BellFordNetwork(DIM_LATENT, DIM_NODES_BellmanFord, DIM_EDGES, processor, flow_datasets.BellmanFordDataset, './BellmanFord', use_ints=True, bits_size=8).to(DEVICE)
             algo_net = models.NaturalBellFordNetwork(
                 DIM_LATENT,
                 DIM_NODES_BellmanFord,
                 DIM_EDGES,
                 processor,
                 MazeDataset,
-                "./BellmanFord",
+                "./MazeDataset",
             ).to(DEVICE)
         processor.add_algorithm(algo_net, algorithm)
 
