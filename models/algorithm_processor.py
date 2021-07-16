@@ -56,4 +56,4 @@ class AlgorithmProcessor(nn.Module):
         self.processor.load_state_dict(state_dict)
     
     def save_processor_only(self, filename):
-        torch.save(self.processor.cpu(), filename)
+        torch.save(self.processor.cpu().state_dict(), filename)

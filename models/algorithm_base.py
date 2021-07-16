@@ -229,3 +229,12 @@ class AlgorithmBase(nn.Module):
         correct, tot = AlgorithmBase.calculate_step_acc(output.unsqueeze(0), real.unsqueeze(0))
         self.last_step.append(correct.squeeze())
         self.last_step_total += tot.squeeze()
+
+    def save_termination_network(self, filename):
+        torch.save(self.termination_network.cpu().state_dict(), filename)
+
+    def load_termination_network(self, state_dict):
+        self.termination_network.load_state_dict(state_dict)
+
+    def load_coin_finder(self, state_dict):
+        self.coin_finder.load_state_dict(state_dict)

@@ -98,6 +98,7 @@ if __name__ == "__main__":
     # print(torch.load(f'best_models/best_{NAME}.pt'))
     # processor.load_state_dict(torch.load(f'best_models/best_{NAME}.pt'))
     processor.load_processor_only(torch.load('best_models/processor_only.pt'))
+    processor.algorithms["MazeNetwork"].load_termination_network(torch.load('best_models/termination_net.pt'))
     processor.eval()
 
     BATCH_SIZE = hyperparameters["batch_size"]
