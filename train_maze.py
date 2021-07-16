@@ -100,6 +100,8 @@ if __name__ == "__main__":
     processor.load_processor_only(torch.load('best_models/processor_only.pt'))
     processor.algorithms["MazeNetwork"].load_termination_network(torch.load('best_models/termination_net.pt'))
     processor.eval()
+    for param in processor.parameters():
+        param.requires_grad = False
 
     BATCH_SIZE = hyperparameters["batch_size"]
     PATIENCE_LIMIT = hyperparameters["patience_limit"]
