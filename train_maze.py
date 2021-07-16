@@ -9,6 +9,7 @@ Options:
     --processor-type PROC            Type of processor. One of {MPNN, PNA, GAT}. [default: MPNN]
 """
 import copy
+from models.maze_network import MazeNetwork
 import os
 import time
 from datetime import datetime
@@ -30,12 +31,26 @@ from utils import interrupted, get_sizes_and_source
 
 
 
-# def process(batch):
-#     DEVICE = get_hyperparameters()["device"]
-#     SIZE = batch.num_nodes
-#     GRAPH_SIZES, SOURCE_NODES = get_sizes_and_source(batch)
-#     x, y = get_input_output_features(batch, SOURCE_NODES)
-#     return x, batch.edge_index, batch.edge_attr
+
+def load_algorithms(algorithms, processor):
+    hyperparameters = get_hyperparameters()
+    DEVICE = hyperparameters["device"]
+    DIM_LATENT = hyperparameters["dim_latent"]
+    DIM_NODES_Maze = hyperparameters["dim_nodes_Maze"]
+    DIM_EDGES = hyperparameters["dim_edges_Maze"]
+    for algorithm in algorithms:
+        if algorithm == "BellmanFord":
+            # algo_net = models.BellFordNetwork(DIM_LATENT, DIM_NODES_BellmanFord, DIM_EDGES, processor, flow_datasets.BellmanFordDataset, './BellmanFord', use_ints=True, bits_size=8).to(DEVICE)
+            algo_net = models.MazeNetwork(
+                DIM_LATENT,
+                DIM_NODES_Maze,
+                DIM_EDGES,
+                processor,
+                MazeNetwork,
+                "./MazeDataset",
+            ).to(DEVICE)
+        processor.add_algorithm(algo_net, algorithm)
+
     
 
 def iterate_over(model, processor, optimizer, test=False):
@@ -66,14 +81,17 @@ def iterate_over(model, processor, optimizer, test=False):
             algorithm.zero_validation_stats()
     try:
         while True:
-            batch = next(iterator)
-            batch.to(DEVICE)
-            with torch.set_grad_enabled(model.training):
-                #node_fea, edge_index, edge_attr = process(batch)
-                output = model(batch.x, batch.edge_index, batch.edge_attr, processor)
-                loss = loss(output, True)
-                loss.backward()
-                optimizer.step()
+            for algorithm in processor.algorithms.values():
+                batch = next(algorithm.iterator)
+                batch.to(DEVICE)
+                EPS_I = 0
+                with torch.set_grad_enabled(processor.training):
+                    output = algorithm.process(batch, EPS_I)
+                    if not processor.training:
+                        algorithm.update_validation_stats(batch, output)
+
+            if processor.training:
+                processor.update_weights(optimizer)
             if interrupted():
                 break
     except StopIteration:  # datasets should be the same size
