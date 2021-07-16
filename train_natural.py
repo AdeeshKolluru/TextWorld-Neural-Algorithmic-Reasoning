@@ -46,6 +46,7 @@ def iterate_over(processor, optimizer=None, test=False):
     BATCH_SIZE = hyperparameters["batch_size"]
     if test:
         BATCH_SIZE = hyperparameters["test_batch_size"]
+
     for algorithm in processor.algorithms.values():
         if processor.training:
             algorithm.iterator = iter(
@@ -261,3 +262,5 @@ if __name__ == "__main__":
 
     os.makedirs(f"best_models/", exist_ok=True)
     torch.save(best_model.state_dict(), f"best_models/best_{NAME}.pt")
+    processor.save_processor_only("best_models/processor_only.pt")
+    processor.algorithms["BellmanFord"].save_termination_network("best_models/termination_net.pt")
