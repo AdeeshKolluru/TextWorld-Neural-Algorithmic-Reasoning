@@ -459,7 +459,7 @@ class MazeDataset(Dataset):
             for i in range(len(graph.description)):
                 self.word_vocab.extend(graph.description[i].split())
         self.word_vocab = np.unique(self.word_vocab)
-        self.word2id = {w: i for i, w in enumerate(self.word_vocab)}
+        self.word2id = {w: i+1 for i, w in enumerate(self.word_vocab)}
 
     def create_input_observation(self, graph):
         observation_id_list = [] 
@@ -481,8 +481,6 @@ class MazeDataset(Dataset):
             return graph
         else:
             mapping = {"r_0": start_node, start_node: "r_0"}
-            #new_is_starting_position = {"r_0": {"is_starting_position": 1}, start_node: {"is_starting_position": 0}}
-            #nx.set_node_attributes(graph, new_is_starting_position)
             graph = nx.relabel_nodes(graph, mapping)
             return graph
 
