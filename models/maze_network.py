@@ -92,8 +92,8 @@ class MazeNetwork(AlgorithmBase):
         hyperparameters = get_hyperparameters()
         DEVICE = hyperparameters["device"]
         DIM_LATENT = hyperparameters["dim_latent"]
-        DIM_NODES = hyperparameters["dim_nodes_BellmanFord"]
-        DIM_EDGES = hyperparameters["dim_edges_BellmanFord"]
+        DIM_NODES = hyperparameters["dim_nodes_Maze"]
+        DIM_EDGES = hyperparameters["dim_edges_Maze"]
 
         SIZE = batch.num_nodes
         super().set_initial_last_states(batch, STEPS_SIZE, SOURCE_NODES)
@@ -118,7 +118,17 @@ class MazeNetwork(AlgorithmBase):
         #     self.update_broken_invariants(batch, predecessors, adj_matrix, flow_matrix)
         return predecessors
     
-    
+    @staticmethod
+    def get_adj_from_predecessors():
+        # Seems not differentiable
+        pass
+
+    def get_maze_loss(self, batch):
+        # Not verified, may need to change
+        shortest_path_adj = utils.get_adj_matrix(batch.edge_index[batch.contained_in_shortest_path])
+
+
+        return None
 
     @overrides
     def get_losses_dict(self):
@@ -131,21 +141,21 @@ class MazeNetwork(AlgorithmBase):
         }
 
 
-    @overrides
-    def get_training_loss(self):
-        return sum(self.get_losses_dict().values())
+    # @overrides
+    # def get_training_loss(self):
+    #     return sum(self.get_losses_dict().values())
 
-    @staticmethod
-    def get_losses_from_predictions(predictions, actual):
-        for key in predictions:
-            if not isinstance(predictions[key], list):
-                continue
-            predictions[key] = torch.stack(predictions[key], dim=0)
-            actual[key] = torch.stack(actual[key], dim=0)
+    # @staticmethod
+    # def get_losses_from_predictions(predictions, actual):
+    #     for key in predictions:
+    #         if not isinstance(predictions[key], list):
+    #             continue
+    #         predictions[key] = torch.stack(predictions[key], dim=0)
+    #         actual[key] = torch.stack(actual[key], dim=0)
 
-        total_loss_reachability = F.binary_cross_entropy_with_logits(predictions["reachabilities"], actual["reachabilities"])
-        total_loss_term = F.binary_cross_entropy_with_logits(predictions["terminations"], actual["terminations"])
-        return total_loss_reachability, total_loss_term
+    #     total_loss_reachability = F.binary_cross_entropy_with_logits(predictions["reachabilities"], actual["reachabilities"])
+    #     total_loss_term = F.binary_cross_entropy_with_logits(predictions["terminations"], actual["terminations"])
+    #     return total_loss_reachability, total_loss_term
 
     def zero_validation_stats(self):
         super().zero_validation_stats()
