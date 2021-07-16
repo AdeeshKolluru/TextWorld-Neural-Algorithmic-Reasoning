@@ -2,7 +2,6 @@
 """
 Usage:
     half_deterministic.py [options] [--algorithms=ALGO]... MODEL_TO_LOAD SAVE_FILE
-
 Options:
     -h --help                        Show this screen.
     --algorithms ALGO                Which algorithms to add. One of {AugmentingPath, BFS}
