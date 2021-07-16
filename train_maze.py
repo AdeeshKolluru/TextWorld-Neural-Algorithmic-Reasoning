@@ -26,16 +26,16 @@ import flow_datasets
 import models
 from flow_datasets import MazeDataset, BellmanFordDataset
 from hyperparameters import get_hyperparameters
-from utils import interrupted
+from utils import interrupted, get_sizes_and_source
 
 
 
-def process(batch):
-        DEVICE = get_hyperparameters()["device"]
-        SIZE = batch.num_nodes
-        GRAPH_SIZES, SOURCE_NODES = utils.get_sizes_and_source(batch)
-        x, y = get_input_output_features(batch, SOURCE_NODES)
-        return x, batch.edge_index, batch.edge_attr
+# def process(batch):
+#     DEVICE = get_hyperparameters()["device"]
+#     SIZE = batch.num_nodes
+#     GRAPH_SIZES, SOURCE_NODES = get_sizes_and_source(batch)
+#     x, y = get_input_output_features(batch, SOURCE_NODES)
+#     return x, batch.edge_index, batch.edge_attr
     
 
 def iterate_over(model, processor, optimizer):
@@ -44,7 +44,7 @@ def iterate_over(model, processor, optimizer):
     BATCH_SIZE = hyperparameters["maze_batch_size"]
     iterator = iter(
         DataLoader(
-            algorithm.train_dataset,
+            processor.algorithms.values()[0].train_dataset,
             batch_size=BATCH_SIZE,
             shuffle=True,
             drop_last=False,
@@ -58,7 +58,7 @@ def iterate_over(model, processor, optimizer):
             with torch.set_grad_enabled(model.training):
                 #node_fea, edge_index, edge_attr = process(batch)
                 output = model(batch.x, batch.edge_index, batch.edge_attr, processor)
-                loss = loss(output, true)
+                loss = loss(output, True)
                 loss.backward()
                 optimizer.step()
             if interrupted():
@@ -67,24 +67,22 @@ def iterate_over(model, processor, optimizer):
         pass
 
 
-
-
-
 if __name__ == "__main__":
     args = docopt(__doc__)
     hyperparameters = get_hyperparameters()
     DEVICE = hyperparameters["device"]
     DIM_LATENT = hyperparameters["dim_latent"]
-    DIM_NODE = hyperparameters["dim_node"]
-    DIM_EDGE = hyperparameters["dim_edge"]
+    DIM_NODE = hyperparameters["dim_nodes_Maze"]
+    DIM_EDGE = hyperparameters["dim_edges_Maze"]
     OUT_DIM = hyperparameters["dim_maze_out"]
 
-    processor = AlgorithmProcessor(
-        DIM_LATENT, BellmanFordDataset, args["--processor-type"]
+    processor = models.AlgorithmProcessor(
+        DIM_LATENT, None, args["--processor-type"]
     ).to(DEVICE)
     NAME = (
             'BellmanFord'+args["--processor-type"]+str(hyperparameters["maze_lr"])+str(hyperparameters["maze_weight_decay"])
         )
+    # print(torch.load(f'best_models/best_{NAME}.pt'))
     processor.load_state_dict(torch.load(f'best_models/best_{NAME}.pt'))
     processor.eval()
 
@@ -100,7 +98,7 @@ if __name__ == "__main__":
     best_mean_acc = 0
     best_loss = np.inf
 
-    fmt = get_print_format()
+    # fmt = get_print_format()
     
     maze_model = models.MazeNetwork(DIM_LATENT, OUT_DIM, DIM_NODE, DIM_EDGE)
 

@@ -546,7 +546,10 @@ if __name__ == '__main__':
     print(f.processed_dir)
     print(f.raw_dir)
     print(len(f))
+    print(f[9])
+    # print(f[-1])
     for i in f:
+        print(i)
         print(i.is_starting_position) 
         #print(i.description) 
 
