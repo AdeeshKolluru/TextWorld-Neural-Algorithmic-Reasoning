@@ -192,7 +192,6 @@ class MazeNetwork(AlgorithmBase):
         encoded_edges = self.encode_edges(edge_attr)
 
         latent_nodes = self.processor(encoded_nodes, encoded_edges, utils.flip_edge_index(edge_index))
-        predecessors = self.pred_network(encoded_nodes, latent_nodes, encoded_edges, edge_index)
 
         output = self.decoder_network(torch.cat((encoded_nodes, latent_nodes), dim=1))
         distances = output.squeeze()
