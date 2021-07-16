@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 class DecoderNetwork(nn.Module):
@@ -19,4 +20,4 @@ class DecoderNetwork_Maze(nn.Module):
         end_edge_nodes_embs = torch.index_select(x, 0, edge_index[1])
         cat_edge_node_embs = torch.cat((starting_edge_nodes_embs, end_edge_nodes_embs), 1)
         out = self.output_net(cat_edge_node_embs)
-        return out
+        return torch.sigmoid(out)
