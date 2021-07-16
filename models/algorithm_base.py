@@ -39,20 +39,6 @@ class AlgorithmBase(nn.Module):
         self.termination_network = nn.Sequential(
             nn.Linear(latent_features, 1, bias=bias),
         )
-        def printer(module, gradInp, gradOutp): # Debug for backward hook
-            s=0
-            mx=-float('inf')
-            for gi in gradInp:
-                s += torch.sum(gi)
-                mx = max(mx, torch.max(gi))
-
-            print(s, mx)
-            s=0
-            mx=-float('inf')
-            for go in gradOutp:
-                s += torch.sum(go)
-                mx = max(mx, torch.max(go))
-            print(s, mx)
 
     def get_continue_p(self, batch_ids, latent_nodes, GRAPH_SIZES):
         graph_latent = utils.get_graph_embedding(batch_ids, latent_nodes, GRAPH_SIZES)
@@ -159,7 +145,6 @@ class AlgorithmBase(nn.Module):
             return tuple(0 for _ in range(len(self.validation_predictions)))
         return type(self).get_losses_from_predictions(self.validation_predictions, self.validation_actual)
 
-
     def get_validation_accuracies(self):
         return sum(self.mean_step)/len(self.mean_step), sum(self.last_step)/self.last_step_total.float()
 
@@ -204,10 +189,6 @@ class AlgorithmBase(nn.Module):
             self.mask, self.mask_cp, self.edge_mask = type(self).get_masks(self.training, batch, to_process, self.last_continue_p, enforced_mask)
 
         outputs = self.get_outputs(batch, adj_matrix, flow_matrix, compute_losses_and_broken)
-        if type(self) == models.AugmentingPathNetwork:
-            walks, mask_end_of_path = utils.get_walks(self.training, batch, outputs, GRAPH_SIZES, SOURCE_NODES, SINK_NODES)
-            mins = self.find_mins(batch, walks, mask_end_of_path, GRAPH_SIZES, SOURCE_NODES, SINK_NODES)
-            flows = self.augment_flow(batch, walks, mask_end_of_path, mins)
 
         batch.edge_index, batch.edge_attr = torch_geometric.utils.remove_self_loops(batch.edge_index, batch.edge_attr)
         return outputs
@@ -236,5 +217,5 @@ class AlgorithmBase(nn.Module):
     def load_termination_network(self, state_dict):
         self.termination_network.load_state_dict(state_dict)
 
-    def load_coin_finder(self, state_dict):
-        self.coin_finder.load_state_dict(state_dict)
+    # def load_coin_finder(self, state_dict):
+    #     self.coin_finder.load_state_dict(state_dict)
