@@ -7,7 +7,6 @@ import torch_geometric
 from torch_cluster import random_walk
 
 from hyperparameters import get_hyperparameters
-from half_deterministic import obtain_paths, get_pairs
 import utils
 from layers import PredecessorNetwork, GAT
 from models import AlgorithmBase

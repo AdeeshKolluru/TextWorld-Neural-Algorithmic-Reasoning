@@ -7,7 +7,6 @@ from torch_geometric.data import DataLoader
 import models
 import flow_datasets
 from hyperparameters import get_hyperparameters
-from half_deterministic import obtain_paths
 from torch_cluster import random_walk
 
 def get_mask_to_process(continue_p, batch_ids, edge_ids, debug=False):
@@ -232,30 +231,6 @@ def create_inv_edge_index(batch_size, size, edge_index):
     for i in range(len(edge_index[0])):
         iei[edge_index[0][i]][edge_index[1][i]] = i
     return iei
-
-def get_walks_from_output(output, GRAPH_SIZES, SOURCE_NODES, SINK_NODES):
-    path_matrix, stop_move_backward_col, final = obtain_paths(
-        output,
-        GRAPH_SIZES,
-        GRAPH_SIZES.max(),
-        SOURCE_NODES,
-        SINK_NODES,
-        return_path_matrix=True
-    )
-    mask = (path_matrix == -100)
-    path_matrix = path_matrix.where(~mask, final.repeat(GRAPH_SIZES.max(), 1).t())
-    return path_matrix, stop_move_backward_col, mask
-
-def get_walks(training, batch, output, GRAPH_SIZES, SOURCE_NODES, SINK_NODES):
-    if training:
-        return random_walk(batch.edge_index[0], batch.edge_index[1], SINK_NODES, walk_length=get_hyperparameters()["walk_length"], coalesced=True).long(), None
-    path_matrix, _, mask = get_walks_from_output(
-        output,
-        GRAPH_SIZES,
-        SOURCE_NODES,
-        SINK_NODES
-    )
-    return path_matrix, mask
 
 def get_print_format():
     fmt = """
