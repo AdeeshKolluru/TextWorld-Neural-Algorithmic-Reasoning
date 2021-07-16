@@ -38,19 +38,32 @@ from utils import interrupted, get_sizes_and_source
 #     return x, batch.edge_index, batch.edge_attr
     
 
-def iterate_over(model, processor, optimizer):
+def iterate_over(model, processor, optimizer, test=False):
     hyperparameters = get_hyperparameters()
     DEVICE = hyperparameters["device"]
     BATCH_SIZE = hyperparameters["maze_batch_size"]
-    iterator = iter(
-        DataLoader(
-            processor.algorithms.values()[0].train_dataset,
-            batch_size=BATCH_SIZE,
-            shuffle=True,
-            drop_last=False,
-            num_workers=8,
-        ))
-
+    for algorithm in processor.algorithms.values():
+        if processor.training:
+            algorithm.iterator = iter(
+                DataLoader(
+                    algorithm.train_dataset,
+                    batch_size=BATCH_SIZE,
+                    shuffle=True,
+                    drop_last=False,
+                    num_workers=8,
+                )
+            )
+        else:
+            algorithm.iterator = iter(
+                DataLoader(
+                    algorithm.test_dataset if test else algorithm.val_dataset,
+                    batch_size=BATCH_SIZE,
+                    shuffle=False,
+                    drop_last=False,
+                    num_workers=8,
+                )
+            )
+            algorithm.zero_validation_stats()
     try:
         while True:
             batch = next(iterator)
@@ -79,11 +92,12 @@ if __name__ == "__main__":
     processor = models.AlgorithmProcessor(
         DIM_LATENT, None, args["--processor-type"]
     ).to(DEVICE)
-    NAME = (
-            'BellmanFord'+args["--processor-type"]+str(hyperparameters["maze_lr"])+str(hyperparameters["maze_weight_decay"])
-        )
+    # NAME = (
+    #         'BellmanFord'+args["--processor-type"]+str(hyperparameters["maze_lr"])+str(hyperparameters["maze_weight_decay"])
+    #     )
     # print(torch.load(f'best_models/best_{NAME}.pt'))
-    processor.load_state_dict(torch.load(f'best_models/best_{NAME}.pt'))
+    # processor.load_state_dict(torch.load(f'best_models/best_{NAME}.pt'))
+    processor.load_processor_only(torch.load('best_models/processor_only.pt'))
     processor.eval()
 
     BATCH_SIZE = hyperparameters["batch_size"]
@@ -100,12 +114,12 @@ if __name__ == "__main__":
 
     # fmt = get_print_format()
     
-    maze_model = models.MazeNetwork(DIM_LATENT, OUT_DIM, DIM_NODE, DIM_EDGE)
+    maze_model = models.MazeNetwork(DIM_LATENT, OUT_DIM, DIM_NODE, DIM_EDGE, processor)
 
 
     with torch.autograd.profiler.profile(enabled=False, use_cuda=True) as prof:
         optimizer = optim.Adam(
-            maze_model.params,
+            maze_model.parameters(),
             lr=hyperparameters["lr"],
             weight_decay=hyperparameters["weight_decay"]
         )

@@ -263,3 +263,4 @@ if __name__ == "__main__":
 
     os.makedirs(f"best_models/", exist_ok=True)
     torch.save(best_model.state_dict(), f"best_models/best_{NAME}.pt")
+    processor.save_processor_only("best_models/processor_only.pt")

@@ -1,4 +1,5 @@
 import time
+import torch
 import torch.nn as nn
 
 from pprint import pprint
@@ -50,4 +51,9 @@ class AlgorithmProcessor(nn.Module):
             print(name, W.grad)
             s += W.grad.sum()
         return s
-
+    
+    def load_processor_only(self, state_dict):
+        self.processor.load_state_dict(state_dict)
+    
+    def save_processor_only(self, filename):
+        torch.save(self.processor.cpu(), filename)
