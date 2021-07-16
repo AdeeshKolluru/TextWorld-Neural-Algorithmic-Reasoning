@@ -99,6 +99,8 @@ if __name__ == "__main__":
     # processor.load_state_dict(torch.load(f'best_models/best_{NAME}.pt'))
     processor.load_processor_only(torch.load('best_models/processor_only.pt'))
     processor.eval()
+    for param in processor.parameters():
+        param.requires_grad = False
 
     BATCH_SIZE = hyperparameters["batch_size"]
     PATIENCE_LIMIT = hyperparameters["patience_limit"]
