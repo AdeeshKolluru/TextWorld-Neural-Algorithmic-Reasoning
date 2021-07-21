@@ -468,7 +468,7 @@ class MazeDataset(Dataset):
             observation_id_list.append([self.word2id[w] for w in observation_list])
         observation_id_list = pad_sequences(observation_id_list, maxlen=100, padding='post').astype('int32')
         input_observation = to_pt(observation_id_list, False)
-        graph.input_observation = input_observation
+        graph.x = input_observation
         graph.description = None
         return graph
 
@@ -494,6 +494,7 @@ class MazeDataset(Dataset):
             graph = self.initial_node_modification(maze_graph)
             graph = from_networkx(graph)
             graph = self.create_input_observation(graph)
+            graph.y = graph.contained_in_shortest_path
             if not os.path.exists(dirname):
                 os.mkdir(dirname)
             torch.save(graph, os.path.join(dirname, '{}.pt'.format(cnt)))
@@ -549,6 +550,7 @@ if __name__ == '__main__':
     for i in f:
         print(i)
         print(i.is_starting_position) 
+        print(i)
         #print(i.description) 
 
     #from torch_geometric.data import DataLoader
