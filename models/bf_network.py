@@ -12,32 +12,41 @@ from layers import PredecessorNetwork, GAT
 from models import AlgorithmBase
 from overrides import overrides
 
+from textworld_helpers.layers import Embedding, masked_mean, FastUniLSTM
 
 class BellFordNetwork(AlgorithmBase):
     def __init__(self, latent_features, node_features, edge_features, algo_processor, dataset_class, dataset_root, bias=False, use_ints=False, bits_size=None):
         super(BellFordNetwork, self).__init__(latent_features, node_features, edge_features, bits_size if use_ints else 1, algo_processor, dataset_class, dataset_root, bias=bias)
+        self.init_helper(bits_size, use_ints, latent_features, bias, node_features, edge_features)
+        self.init_node_encoder()
+
+    def init_helper(self, bits_size, use_ints, latent_features, bias, node_features, edge_features):
+        # we need this to reuse the code in NaturalBellFordNetwork
         self.bits_size = bits_size
         if use_ints:
             self.bit_encoder = nn.Sequential(
                 nn.Linear(bits_size, latent_features, bias=bias),
                 nn.LeakyReLU()
             )
-
-        ne_input_features = 2*latent_features if use_ints else node_features+latent_features
-        self.node_encoder = nn.Sequential(
-            nn.Linear(ne_input_features, latent_features, bias=bias),
-            nn.LeakyReLU()
-        )
-
-        ee_input_features = 2*latent_features if use_ints else edge_features
-        self.edge_encoder = nn.Sequential(
-            nn.Linear(ee_input_features, latent_features, bias=bias),
-            nn.LeakyReLU()
-        )
+        self.ne_input_features = 2*latent_features if use_ints else node_features+latent_features
 
         self.pred_network = PredecessorNetwork(latent_features, latent_features, bias=bias)
         if not use_ints:
             self.infinity = nn.Parameter(torch.randn(latent_features))
+        ee_input_features = 2 * latent_features if use_ints else edge_features
+
+        self.edge_encoder = nn.Sequential(
+            nn.Linear(ee_input_features, latent_features, bias=bias),
+            nn.LeakyReLU()
+        )
+        self.latent_features = latent_features
+        self.bias = bias
+
+    def init_node_encoder(self):
+        self.node_encoder = nn.Sequential(
+            nn.Linear(self.ne_input_features, self.latent_features, bias=self.bias),
+            nn.LeakyReLU()
+        )
 
     def zero_tracking_losses_and_statistics(self):
         super().zero_tracking_losses_and_statistics()
@@ -284,6 +293,9 @@ class BellFordNetwork(AlgorithmBase):
         encoded_edges = self.edge_encoder(edge_attr)
         return encoded_edges
 
+    def encode_nodes(self, inp):
+        return self.node_encoder(inp)
+
     def forward(self, batch_ids, GRAPH_SIZES, current_input, last_latent, edge_index, edge_attr, iimask, edge_mask=None):
         SIZE = last_latent.shape[0]
         if self.bits_size is not None:
@@ -293,8 +305,8 @@ class BellFordNetwork(AlgorithmBase):
             current_input = current_input.unsqueeze(1)
 
         inp = torch.cat((current_input, last_latent), dim=1)
+        encoded_nodes = self.encode_nodes(inp)
 
-        encoded_nodes = self.node_encoder(inp)
         if self.steps == 0 and self.bits_size is None: # if we are not using integers we learn infinity embedding for the first step
             encoded_nodes[iimask] = self.infinity
         #print(edge_attr.shape)
@@ -310,4 +322,23 @@ class BellFordNetwork(AlgorithmBase):
         distances = output.squeeze()
         continue_p = self.get_continue_p(batch_ids, latent_nodes, GRAPH_SIZES)
         return latent_nodes, distances, predecessors, continue_p
+
+class NaturalBellFordNetwork(BellFordNetwork):
+    def init_node_encoder(self):
+        self.node_encoder = nn.LSTM(self.ne_input_features, self.latent_features, bias=self.bias)
+        self.word_embedding = Embedding(embedding_size=self.ne_input_features,
+                vocab_size=10000,
+                enable_cuda=get_hyperparameters()["device"] != 'cpu')
+        # self.encoder = FastUniLSTM(ninp=self.embedding_size,
+        #         nhids=self.encoder_rnn_hidden_size,
+        #         dropout_between_rnn_layers=self.dropout_between_rnn_layers)
+
+    def encode_nodes(self, inp):
+        # TODO update the forward for LSTM - give required input format
+        # TODO better if the dataset has long type, not doing conversion here
+        embedded = self.word_embedding(inp.type(torch.long))[0] # [0] to get the ouptut
+        # for lstm output [0] has the output, [1] will have hidden states and cell states.
+        return self.node_encoder(embedded)[0][:, -1]
+
+
 
